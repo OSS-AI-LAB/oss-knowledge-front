@@ -1,56 +1,62 @@
 <template>
-  <div class="loading-spinner">
+  <div class="loading-spinner" :class="sizeClass">
     <div class="spinner">
-      <div class="spinner-circle"></div>
+      <div class="spinner-ring"></div>
     </div>
-    <p v-if="text" class="loading-text">{{ text }}</p>
   </div>
 </template>
 
 <script setup>
-defineProps({
-  text: {
+import { computed } from 'vue'
+
+const props = defineProps({
+  size: {
     type: String,
-    default: ''
+    default: 'medium',
+    validator: (value) => ['small', 'medium', 'large'].includes(value)
   }
 })
+
+const sizeClass = computed(() => `spinner-${props.size}`)
 </script>
 
-<style lang="scss" scoped>
+<style scoped>
 .loading-spinner {
-  display: flex;
-  flex-direction: column;
+  display: inline-flex;
   align-items: center;
-  gap: 12px;
+  justify-content: center;
 }
 
 .spinner {
-  width: 32px;
-  height: 32px;
   position: relative;
 }
 
-.spinner-circle {
-  width: 100%;
-  height: 100%;
-  border: 3px solid var(--border-color);
-  border-top-color: var(--accent-color);
+.spinner-ring {
   border-radius: 50%;
-  animation: spin 1s linear infinite;
+  border: 2px solid var(--color-border);
+  border-top-color: var(--color-primary);
+  animation: spin 0.8s linear infinite;
+}
+
+/* Size variants */
+.spinner-small .spinner-ring {
+  width: 16px;
+  height: 16px;
+}
+
+.spinner-medium .spinner-ring {
+  width: 24px;
+  height: 24px;
+}
+
+.spinner-large .spinner-ring {
+  width: 32px;
+  height: 32px;
 }
 
 @keyframes spin {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
+  to {
     transform: rotate(360deg);
   }
-}
-
-.loading-text {
-  font-size: 14px;
-  color: var(--text-secondary);
-  margin: 0;
 }
 </style>

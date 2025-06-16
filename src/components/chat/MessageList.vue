@@ -1,185 +1,108 @@
 <template>
-  <div class="message-list" ref="messageListRef">
-    <div v-if="messages.length === 0" class="empty-state">
-      <div class="empty-icon">
-        <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
-          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15v-2h2v2h-2zm0-4V7h2v6h-2z" fill="currentColor" opacity="0.3"/>
-        </svg>
-      </div>
-      <h2>어떻게 도와드릴까요?</h2>
-      <p>무엇이든 물어보세요. 코드 작성, 분석, 창작 등 다양한 작업을 도와드릴 수 있습니다.</p>
-    </div>
-
-    <div v-else class="messages">
+  <div class="message-list">
+    <div
+      v-for="message in messages"
+      :key="message.id"
+      class="message-wrapper"
+    >
       <ChatMessage
-        v-for="message in messages"
-        :key="message.id"
         :message="message"
-        @retry="$emit('retry', message.id)"
         @copy="handleCopy"
+        @edit="handleEdit"
+        @delete="handleDelete"
+        @regenerate="handleRegenerate"
       />
-
-      <div v-if="loading" class="loading-message">
-        <LoadingSpinner />
-      </div>
     </div>
-
-    <!-- 자동 스크롤을 위한 앵커 -->
-    <div ref="scrollAnchor"></div>
   </div>
 </template>
 
 <script setup>
-import { ref, watch, nextTick, onMounted, onUnmounted } from 'vue'
+import { useChatStore } from '@/stores/chat'
 import ChatMessage from './ChatMessage.vue'
-import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 
 const props = defineProps({
   messages: {
     type: Array,
-    default: () => []
-  },
-  loading: {
-    type: Boolean,
-    default: false
+    required: true
   }
 })
 
-const emit = defineEmits(['retry'])
+const emit = defineEmits(['scroll-to-bottom'])
 
-const messageListRef = ref(null)
-const scrollAnchor = ref(null)
-const isUserScrolling = ref(false)
-let scrollTimeout = null
+const chatStore = useChatStore()
 
-// 자동 스크롤
-const scrollToBottom = () => {
-  if (!isUserScrolling.value && scrollAnchor.value) {
-    scrollAnchor.value.scrollIntoView({ behavior: 'smooth' })
+// Methods
+function handleCopy(messageId) {
+  chatStore.copyMessage(messageId)
+  // Show toast notification
+  showToast('Message copied to clipboard')
+}
+
+function handleEdit(messageId, newContent) {
+  chatStore.editMessage(messageId, newContent)
+}
+
+function handleDelete(messageId) {
+  if (confirm('Are you sure you want to delete this message?')) {
+    chatStore.deleteMessage(messageId)
   }
 }
 
-// 사용자 스크롤 감지
-const handleScroll = () => {
-  if (!messageListRef.value) return
-
-  const { scrollTop, scrollHeight, clientHeight } = messageListRef.value
-  const isAtBottom = scrollHeight - scrollTop - clientHeight < 100
-
-  isUserScrolling.value = !isAtBottom
-
-  // 스크롤 타임아웃 리셋
-  clearTimeout(scrollTimeout)
-  scrollTimeout = setTimeout(() => {
-    isUserScrolling.value = false
-  }, 1000)
+function handleRegenerate() {
+  chatStore.regenerateLastMessage()
 }
 
-// 복사 처리
-const handleCopy = (text) => {
-  navigator.clipboard.writeText(text).then(() => {
-    // 복사 성공 알림 (토스트 메시지 등)
-    console.log('복사되었습니다')
-  }).catch(err => {
-    console.error('복사 실패:', err)
-  })
+function showToast(message) {
+  // Simple toast implementation
+  const toast = document.createElement('div')
+  toast.className = 'toast'
+  toast.textContent = message
+  document.body.appendChild(toast)
+
+  setTimeout(() => {
+    toast.classList.add('show')
+  }, 10)
+
+  setTimeout(() => {
+    toast.classList.remove('show')
+    setTimeout(() => {
+      document.body.removeChild(toast)
+    }, 300)
+  }, 2000)
 }
-
-// 메시지 변경 감지
-watch(() => props.messages.length, () => {
-  nextTick(() => {
-    scrollToBottom()
-  })
-})
-
-// 스트리밍 메시지 업데이트 감지
-watch(() => props.messages[props.messages.length - 1]?.content, () => {
-  if (!isUserScrolling.value) {
-    nextTick(() => {
-      scrollToBottom()
-    })
-  }
-}, { deep: true })
-
-onMounted(() => {
-  if (messageListRef.value) {
-    messageListRef.value.addEventListener('scroll', handleScroll)
-  }
-  scrollToBottom()
-})
-
-onUnmounted(() => {
-  if (messageListRef.value) {
-    messageListRef.value.removeEventListener('scroll', handleScroll)
-  }
-  clearTimeout(scrollTimeout)
-})
 </script>
 
-<style lang="scss" scoped>
+<style scoped>
 .message-list {
-  height: 100%;
-  overflow-y: auto;
-  padding: 20px 0;
-}
-
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 400px;
-  padding: 40px 20px;
-  text-align: center;
-
-  .empty-icon {
-    margin-bottom: 24px;
-    color: var(--text-tertiary);
-  }
-
-  h2 {
-    font-size: 24px;
-    font-weight: 600;
-    margin-bottom: 12px;
-    color: var(--text-primary);
-  }
-
-  p {
-    font-size: 16px;
-    color: var(--text-secondary);
-    max-width: 500px;
-    line-height: 1.5;
-  }
-}
-
-.messages {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-  padding: 0 20px;
-  max-width: 800px;
+  max-width: var(--chat-max-width);
   margin: 0 auto;
+  padding: var(--spacing-lg) 0;
 }
 
-.loading-message {
-  display: flex;
-  justify-content: center;
-  padding: 20px;
-}
+.message-wrapper {
+  margin-bottom: var(--spacing-lg);
 
-@media (max-width: 768px) {
-  .messages {
-    padding: 0 16px;
+  &:last-child {
+    margin-bottom: 0;
   }
+}
 
-  .empty-state {
-    h2 {
-      font-size: 20px;
-    }
+/* Global toast styles */
+:global(.toast) {
+  position: fixed;
+  bottom: var(--spacing-lg);
+  left: 50%;
+  transform: translateX(-50%) translateY(100%);
+  background-color: var(--color-text-primary);
+  color: var(--color-background);
+  padding: var(--spacing-sm) var(--spacing-lg);
+  border-radius: var(--radius-lg);
+  font-size: var(--font-size-sm);
+  z-index: 10000;
+  transition: transform var(--transition-base);
 
-    p {
-      font-size: 14px;
-    }
+  &.show {
+    transform: translateX(-50%) translateY(0);
   }
 }
 </style>

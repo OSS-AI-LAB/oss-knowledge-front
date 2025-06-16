@@ -1,153 +1,225 @@
-
-// 스토리지 키 접두사
-const STORAGE_PREFIX = 'claude_chat_'
-
-// 스토리지에 저장
-export const saveToStorage = (key, data) => {
-  try {
-    const serialized = JSON.stringify(data)
-    localStorage.setItem(STORAGE_PREFIX + key, serialized)
-    return true
-  } catch (error) {
-    console.error('스토리지 저장 오류:', error)
-    return false
-  }
+const STORAGE_KEYS = {
+  AUTH_TOKEN: 'authToken',
+  USER_PREFERENCES: 'userPreferences',
+  CONVERSATIONS: 'conversations',
+  CURRENT_CONVERSATION: 'currentConversationId',
+  SIDEBAR_STATE: 'sidebarVisible',
+  DARK_MODE: 'darkMode',
+  REMEMBERED_EMAIL: 'rememberedEmail'
 }
 
-// 스토리지에서 불러오기
-export const getFromStorage = (key) => {
-  try {
-    const item = localStorage.getItem(STORAGE_PREFIX + key)
-    if (!item) return null
-    return JSON.parse(item)
-  } catch (error) {
-    console.error('스토리지 불러오기 오류:', error)
-    return null
+class StorageService {
+  constructor() {
+    this.prefix = 'claude_'
   }
-}
 
-// 스토리지에서 삭제
-export const removeFromStorage = (key) => {
-  try {
-    localStorage.removeItem(STORAGE_PREFIX + key)
-    return true
-  } catch (error) {
-    console.error('스토리지 삭제 오류:', error)
-    return false
+  // Get full key with prefix
+  getKey(key) {
+    return `${this.prefix}${key}`
   }
-}
 
-// 스토리지 전체 삭제
-export const clearStorage = () => {
-  try {
+  // Set item in localStorage
+  set(key, value) {
+    try {
+      const serialized = JSON.stringify(value)
+      localStorage.setItem(this.getKey(key), serialized)
+      return true
+    } catch (error) {
+      console.error('Error saving to localStorage:', error)
+      return false
+    }
+  }
+
+  // Get item from localStorage
+  get(key, defaultValue = null) {
+    try {
+      const item = localStorage.getItem(this.getKey(key))
+      if (item === null) {
+        return defaultValue
+      }
+      return JSON.parse(item)
+    } catch (error) {
+      console.error('Error reading from localStorage:', error)
+      return defaultValue
+    }
+  }
+
+  // Remove item from localStorage
+  remove(key) {
+    try {
+      localStorage.removeItem(this.getKey(key))
+      return true
+    } catch (error) {
+      console.error('Error removing from localStorage:', error)
+      return false
+    }
+  }
+
+  // Clear all items with prefix
+  clear() {
+    try {
+      const keys = Object.keys(localStorage)
+      keys.forEach(key => {
+        if (key.startsWith(this.prefix)) {
+          localStorage.removeItem(key)
+        }
+      })
+      return true
+    } catch (error) {
+      console.error('Error clearing localStorage:', error)
+      return false
+    }
+  }
+
+  // Check if key exists
+  has(key) {
+    return localStorage.getItem(this.getKey(key)) !== null
+  }
+
+  // Get storage size for this app
+  getSize() {
+    let size = 0
     const keys = Object.keys(localStorage)
+
     keys.forEach(key => {
-      if (key.startsWith(STORAGE_PREFIX)) {
-        localStorage.removeItem(key)
+      if (key.startsWith(this.prefix)) {
+        const item = localStorage.getItem(key)
+        size += item ? item.length : 0
       }
     })
-    return true
-  } catch (error) {
-    console.error('스토리지 초기화 오류:', error)
-    return false
+
+    return size
   }
-}
 
-// 스토리지 용량 확인
-export const getStorageSize = () => {
-  let totalSize = 0
-  const keys = Object.keys(localStorage)
+  // Check if localStorage is available
+  isAvailable() {
+    try {
+      const testKey = '__storage_test__'
+      localStorage.setItem(testKey, 'test')
+      localStorage.removeItem(testKey)
+      return true
+    } catch (error) {
+      return false
+    }
+  }
 
-  keys.forEach(key => {
-    if (key.startsWith(STORAGE_PREFIX)) {
-      const item = localStorage.getItem(key)
-      if (item) {
-        totalSize += item.length
+  // Migrate old storage format
+  migrate() {
+    // Example migration logic
+    const oldConversations = localStorage.getItem('conversations')
+    if (oldConversations && !this.has(STORAGE_KEYS.CONVERSATIONS)) {
+      try {
+        this.set(STORAGE_KEYS.CONVERSATIONS, JSON.parse(oldConversations))
+        localStorage.removeItem('conversations')
+      } catch (error) {
+        console.error('Migration failed:', error)
       }
     }
-  })
-
-  return {
-    bytes: totalSize,
-    kb: (totalSize / 1024).toFixed(2),
-    mb: (totalSize / 1024 / 1024).toFixed(2)
   }
 }
 
-// 대화 저장 (압축 포함)
-export const saveConversation = (conversationId, data) => {
-  const key = `conversation_${conversationId}`
+// Create singleton instance
+const storage = new StorageService()
 
-  // 큰 대화의 경우 메시지 수 제한
-  if (data.messages && data.messages.length > 100) {
-    data.messages = data.messages.slice(-100)
-  }
-
-  return saveToStorage(key, data)
+// Check availability on startup
+if (!storage.isAvailable()) {
+  console.warn('localStorage is not available. Data will not persist.')
 }
 
-// 대화 불러오기
-export const loadConversation = (conversationId) => {
-  const key = `conversation_${conversationId}`
-  return getFromStorage(key)
-}
+// Run migrations
+storage.migrate()
 
-// 모든 대화 ID 가져오기
-export const getAllConversationIds = () => {
-  const ids = []
-  const keys = Object.keys(localStorage)
+// Specific storage functions
+export const authStorage = {
+  getToken() {
+    return storage.get(STORAGE_KEYS.AUTH_TOKEN)
+  },
 
-  keys.forEach(key => {
-    if (key.startsWith(STORAGE_PREFIX + 'conversation_')) {
-      const id = key.replace(STORAGE_PREFIX + 'conversation_', '')
-      ids.push(id)
-    }
-  })
+  setToken(token) {
+    return storage.set(STORAGE_KEYS.AUTH_TOKEN, token)
+  },
 
-  return ids
-}
+  removeToken() {
+    return storage.remove(STORAGE_KEYS.AUTH_TOKEN)
+  },
 
-// 설정 저장/불러오기
-export const saveSettings = (settings) => {
-  return saveToStorage('settings', settings)
-}
-
-export const loadSettings = () => {
-  return getFromStorage('settings') || {
-    theme: 'system',
-    fontSize: 'medium',
-    enterToSend: true,
-    soundEnabled: false,
-    autoSave: true
+  isAuthenticated() {
+    return !!this.getToken()
   }
 }
 
-// 임시 저장 (자동 저장)
-export const saveDraft = (conversationId, content) => {
-  const key = `draft_${conversationId || 'new'}`
-  return saveToStorage(key, {
-    content,
-    timestamp: new Date().toISOString()
-  })
-}
+export const conversationStorage = {
+  getAll() {
+    return storage.get(STORAGE_KEYS.CONVERSATIONS, [])
+  },
 
-export const loadDraft = (conversationId) => {
-  const key = `draft_${conversationId || 'new'}`
-  const draft = getFromStorage(key)
+  save(conversations) {
+    return storage.set(STORAGE_KEYS.CONVERSATIONS, conversations)
+  },
 
-  if (draft) {
-    // 24시간 이상 된 임시 저장은 삭제
-    const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000)
-    if (new Date(draft.timestamp) < dayAgo) {
-      removeFromStorage(key)
-      return null
-    }
+  getCurrent() {
+    return storage.get(STORAGE_KEYS.CURRENT_CONVERSATION)
+  },
+
+  setCurrent(id) {
+    return storage.set(STORAGE_KEYS.CURRENT_CONVERSATION, id)
+  },
+
+  getMessages(conversationId) {
+    return storage.get(`messages_${conversationId}`, [])
+  },
+
+  saveMessages(conversationId, messages) {
+    return storage.set(`messages_${conversationId}`, messages)
+  },
+
+  deleteMessages(conversationId) {
+    return storage.remove(`messages_${conversationId}`)
   }
-
-  return draft
 }
 
-export const clearDraft = (conversationId) => {
-  const key = `draft_${conversationId || 'new'}`
-  return removeFromStorage(key)
+export const preferencesStorage = {
+  get() {
+    return storage.get(STORAGE_KEYS.USER_PREFERENCES, {
+      theme: 'auto',
+      fontSize: 'medium',
+      compactMode: false,
+      sendOnEnter: true,
+      showTimestamps: true,
+      enableSounds: false
+    })
+  },
+
+  save(preferences) {
+    return storage.set(STORAGE_KEYS.USER_PREFERENCES, preferences)
+  },
+
+  update(updates) {
+    const current = this.get()
+    return this.save({ ...current, ...updates })
+  }
 }
+
+export const uiStorage = {
+  getSidebarState() {
+    return storage.get(STORAGE_KEYS.SIDEBAR_STATE, true)
+  },
+
+  setSidebarState(visible) {
+    return storage.set(STORAGE_KEYS.SIDEBAR_STATE, visible)
+  },
+
+  getDarkMode() {
+    return storage.get(STORAGE_KEYS.DARK_MODE, null)
+  },
+
+  setDarkMode(enabled) {
+    return storage.set(STORAGE_KEYS.DARK_MODE, enabled)
+  }
+}
+
+// Export default storage instance
+export default storage
+
+// Export storage keys for direct access if needed
+export { STORAGE_KEYS }

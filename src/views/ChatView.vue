@@ -1,225 +1,239 @@
 <template>
   <div class="chat-view">
-    <!-- 사이드바 -->
-    <div class="sidebar" :class="{ collapsed: !sidebarOpen }">
-      <SidebarHeader @toggle="toggleSidebar" />
-      <ConversationList />
+    <!-- Messages Area -->
+    <div class="messages-container" ref="messagesContainer">
+      <MessageList
+        :messages="messages"
+        @scroll-to-bottom="scrollToBottom"
+      />
+
+      <!-- Welcome message when no messages -->
+      <div v-if="!hasMessages" class="welcome-message">
+        <h1>Welcome to Claude</h1>
+        <p class="subtitle">Start a conversation to begin</p>
+
+        <div class="suggestions">
+          <h3>Try asking me to:</h3>
+          <div class="suggestion-grid">
+            <button
+              v-for="suggestion in suggestions"
+              :key="suggestion"
+              @click="handleSuggestion(suggestion)"
+              class="suggestion-item"
+            >
+              {{ suggestion }}
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <!-- 메인 채팅 영역 -->
-    <div class="chat-main">
-      <div class="chat-header">
-        <button class="menu-toggle" @click="toggleSidebar" v-if="!sidebarOpen">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-            <path d="M3 12h18M3 6h18M3 18h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-          </svg>
-        </button>
-        <h1 class="chat-title">{{ currentConversation?.title || 'New Chat' }}</h1>
-        <ThemeToggle />
-      </div>
-
-      <div class="chat-content">
-        <MessageList
-          :messages="messages"
-          :loading="isLoading"
-          @retry="retryMessage"
-        />
-      </div>
-
-      <div class="chat-input-wrapper">
-        <ChatInput
-          @send="sendMessage"
-          @file-upload="handleFileUpload"
-          :disabled="isLoading"
-        />
-      </div>
+    <!-- Input Area -->
+    <div class="input-container">
+      <ChatInput
+        :disabled="isLoading"
+        :is-streaming="isStreaming"
+        @send-message="handleSendMessage"
+        @stop-streaming="handleStopStreaming"
+      />
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, watch, onMounted, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useChatStore } from '@/stores/chat'
-import { useConversationStore } from '@/stores/conversations'
-import SidebarHeader from '@/components/sidebar/SidebarHeader.vue'
-import ConversationList from '@/components/sidebar/ConversationList.vue'
+import { useConversationStore } from '@/stores/conversation'
 import MessageList from '@/components/chat/MessageList.vue'
 import ChatInput from '@/components/chat/ChatInput.vue'
-import ThemeToggle from '@/components/common/ThemeToggle.vue'
 
 const route = useRoute()
 const router = useRouter()
 const chatStore = useChatStore()
 const conversationStore = useConversationStore()
 
-const sidebarOpen = ref(true)
-const isLoading = computed(() => chatStore.isLoading)
+// Refs
+const messagesContainer = ref(null)
+
+// Computed
 const messages = computed(() => chatStore.messages)
-const currentConversation = computed(() => conversationStore.currentConversation)
+const hasMessages = computed(() => chatStore.hasMessages)
+const isLoading = computed(() => chatStore.isLoading)
+const isStreaming = computed(() => chatStore.isStreaming)
 
-// 사이드바 토글
-const toggleSidebar = () => {
-  sidebarOpen.value = !sidebarOpen.value
+// Suggestions for new users
+const suggestions = [
+  "Help me write code",
+  "Explain a complex topic",
+  "Brainstorm ideas",
+  "Analyze some data",
+  "Write a story",
+  "Solve a problem"
+]
+
+// Methods
+async function handleSendMessage({ content, attachments }) {
+  // Create new conversation if needed
+  if (!conversationStore.currentConversationId) {
+    conversationStore.createConversation()
+  }
+
+  await chatStore.sendUserMessage(content, attachments)
+
+  // Update conversation preview
+  conversationStore.updateConversationPreview(content)
+
+  // Save messages
+  chatStore.saveMessages(conversationStore.currentConversationId)
+
+  // Scroll to bottom
+  await nextTick()
+  scrollToBottom()
 }
 
-// 메시지 전송
-const sendMessage = async (content) => {
-  if (!content.trim()) return
+function handleStopStreaming() {
+  chatStore.stopStreaming()
+}
 
-  const conversationId = route.params.id || await createNewConversation()
+function handleSuggestion(suggestion) {
+  handleSendMessage({ content: suggestion, attachments: [] })
+}
 
-  try {
-    await chatStore.sendMessage(content, conversationId)
-
-    // 대화 제목이 없으면 첫 메시지로 제목 생성
-    if (!currentConversation.value?.title || currentConversation.value.title === 'New Chat') {
-      const title = content.substring(0, 30) + (content.length > 30 ? '...' : '')
-      conversationStore.updateConversation(conversationId, {
-        title,
-        lastMessage: content.substring(0, 50) + (content.length > 50 ? '...' : '')
-      })
-    } else {
-      // 마지막 메시지 업데이트
-      conversationStore.updateConversation(conversationId, {
-        lastMessage: content.substring(0, 50) + (content.length > 50 ? '...' : '')
-      })
-    }
-  } catch (error) {
-    console.error('메시지 전송 실패:', error)
+function scrollToBottom() {
+  if (messagesContainer.value) {
+    messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight
   }
 }
 
-// 새 대화 생성
-const createNewConversation = async () => {
-  const conversation = await conversationStore.createConversation()
-  router.push(`/chat/${conversation.id}`)
-  return conversation.id
-}
-
-// 파일 업로드 처리
-const handleFileUpload = async (files) => {
-  for (const file of files) {
-    await chatStore.addFileToMessage(file)
-  }
-}
-
-// 메시지 재시도
-const retryMessage = async (messageId) => {
-  await chatStore.retryMessage(messageId)
-}
-
-// 대화 변경 감지
-watch(() => route.params.id, async (newId) => {
+// Watch for conversation changes
+watch(() => route.params.conversationId, (newId) => {
   if (newId) {
-    await conversationStore.loadConversation(newId)
-    await chatStore.loadMessages(newId)
+    conversationStore.selectConversation(newId)
+    chatStore.loadMessages(newId)
   } else {
+    // New conversation
+    conversationStore.currentConversationId = null
     chatStore.clearMessages()
-    conversationStore.setCurrentConversation(null)
   }
 }, { immediate: true })
 
-// 반응형 처리
+// Watch for new messages to auto-scroll
+watch(messages, () => {
+  nextTick(() => {
+    scrollToBottom()
+  })
+}, { deep: true })
+
+// Handle new conversation event
 onMounted(() => {
-  const handleResize = () => {
-    if (window.innerWidth < 768) {
-      sidebarOpen.value = false
-    }
-  }
-
-  handleResize()
-  window.addEventListener('resize', handleResize)
-
-  return () => {
-    window.removeEventListener('resize', handleResize)
-  }
+  window.addEventListener('new-conversation', () => {
+    router.push('/')
+    conversationStore.currentConversationId = null
+    chatStore.clearMessages()
+  })
 })
 </script>
 
-<style lang="scss" scoped>
+<style scoped>
 .chat-view {
   display: flex;
+  flex-direction: column;
   height: 100vh;
-  overflow: hidden;
+  width: 100%;
+  background-color: var(--color-background);
 }
 
-.sidebar {
-  width: var(--sidebar-width);
-  background-color: var(--bg-secondary);
-  border-right: 1px solid var(--border-color);
-  display: flex;
-  flex-direction: column;
-  transition: width 0.3s ease, transform 0.3s ease;
-
-  &.collapsed {
-    width: 0;
-    transform: translateX(-100%);
-  }
-
-  @media (max-width: 768px) {
-    position: absolute;
-    left: 0;
-    top: 0;
-    height: 100%;
-    z-index: 100;
-
-    &:not(.collapsed) {
-      width: 80%;
-      max-width: 300px;
-    }
-  }
-}
-
-.chat-main {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.chat-header {
-  height: 60px;
-  padding: 0 20px;
-  border-bottom: 1px solid var(--border-color);
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  background-color: var(--bg-primary);
-
-  .menu-toggle {
-    background: none;
-    border: none;
-    color: var(--text-primary);
-    cursor: pointer;
-    padding: 8px;
-    border-radius: 8px;
-    transition: background-color 0.2s;
-
-    &:hover {
-      background-color: var(--hover-bg);
-    }
-  }
-
-  .chat-title {
-    flex: 1;
-    font-size: 18px;
-    font-weight: 600;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-}
-
-.chat-content {
+.messages-container {
   flex: 1;
   overflow-y: auto;
-  background-color: var(--bg-primary);
+  padding: var(--spacing-md);
+  padding-bottom: var(--spacing-2xl);
 }
 
-.chat-input-wrapper {
-  padding: 20px;
-  background-color: var(--bg-primary);
-  border-top: 1px solid var(--border-color);
+.welcome-message {
+  max-width: var(--chat-max-width);
+  margin: 0 auto;
+  padding: var(--spacing-2xl);
+  text-align: center;
+
+  h1 {
+    font-size: 2.5rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    margin-bottom: var(--spacing-sm);
+  }
+
+  .subtitle {
+    font-size: var(--font-size-lg);
+    color: var(--color-text-secondary);
+    margin-bottom: var(--spacing-2xl);
+  }
+}
+
+.suggestions {
+  margin-top: var(--spacing-2xl);
+
+  h3 {
+    font-size: var(--font-size-base);
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    margin-bottom: var(--spacing-lg);
+  }
+}
+
+.suggestion-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--spacing-md);
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.suggestion-item {
+  padding: var(--spacing-md) var(--spacing-lg);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+
+  &:hover {
+    background-color: var(--color-sidebar);
+    border-color: var(--color-primary);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+.input-container {
+  border-top: 1px solid var(--color-border);
+  background-color: var(--color-surface);
+  padding: var(--spacing-md);
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+  .messages-container {
+    padding: var(--spacing-sm);
+  }
+
+  .welcome-message {
+    padding: var(--spacing-lg);
+
+    h1 {
+      font-size: 2rem;
+    }
+  }
+
+  .suggestion-grid {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

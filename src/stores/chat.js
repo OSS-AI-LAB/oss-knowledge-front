@@ -1,148 +1,181 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
-import { sendMessageAPI, streamMessageAPI, getMessagesAPI } from '@/services/api'
+import { ref, computed } from 'vue'
+import { sendMessage, streamMessage } from '@/services/api'
+import { useConversationStore } from './conversation'
 
 export const useChatStore = defineStore('chat', () => {
+  // State
   const messages = ref([])
   const isLoading = ref(false)
-  const currentStreamingMessageId = ref(null)
+  const error = ref(null)
+  const streamingMessageId = ref(null)
+  const abortController = ref(null)
 
-  // 메시지 추가
-  const addMessage = (message) => {
-    messages.value.push({
-      id: Date.now().toString(),
-      ...message,
-      timestamp: new Date().toISOString()
-    })
-    return messages.value[messages.value.length - 1]
-  }
+  // Getters
+  const hasMessages = computed(() => messages.value.length > 0)
+  const lastMessage = computed(() => messages.value[messages.value.length - 1])
+  const isStreaming = computed(() => streamingMessageId.value !== null)
 
-  // 메시지 업데이트
-  const updateMessage = (messageId, updates) => {
-    const index = messages.value.findIndex(m => m.id === messageId)
-    if (index !== -1) {
-      messages.value[index] = { ...messages.value[index], ...updates }
-    }
-  }
+  // Actions
+  async function sendUserMessage(content, attachments = []) {
+    const conversationStore = useConversationStore()
 
-  // 메시지 전송
-  const sendMessage = async (content, conversationId, files = []) => {
-    isLoading.value = true
-
-    // 사용자 메시지 추가
-    const userMessage = addMessage({
+    // Add user message
+    const userMessage = {
+      id: `msg_${Date.now()}`,
       role: 'user',
       content,
-      files,
-      conversationId
-    })
+      attachments,
+      timestamp: new Date().toISOString(),
+      conversationId: conversationStore.currentConversationId
+    }
 
-    // AI 응답 메시지 초기화
-    const aiMessage = addMessage({
+    messages.value.push(userMessage)
+
+    // Create AI message placeholder
+    const aiMessage = {
+      id: `msg_${Date.now() + 1}`,
       role: 'assistant',
       content: '',
-      conversationId,
+      timestamp: new Date().toISOString(),
+      conversationId: conversationStore.currentConversationId,
       isStreaming: true
-    })
+    }
 
-    currentStreamingMessageId.value = aiMessage.id
+    messages.value.push(aiMessage)
+    streamingMessageId.value = aiMessage.id
 
     try {
-      // 스트리밍 응답 처리
-      await streamMessageAPI(
+      isLoading.value = true
+      error.value = null
+
+      // Create abort controller for cancellation
+      abortController.value = new AbortController()
+
+      // Stream response
+      await streamMessage(
         content,
-        conversationId,
-        files,
+        attachments,
         (chunk) => {
-          // 스트리밍 청크 처리
-          const currentMessage = messages.value.find(m => m.id === aiMessage.id)
-          if (currentMessage) {
-            currentMessage.content += chunk
+          const index = messages.value.findIndex(m => m.id === aiMessage.id)
+          if (index !== -1) {
+            messages.value[index].content += chunk
           }
-        }
+        },
+        abortController.value.signal
       )
 
-      // 스트리밍 완료
-      updateMessage(aiMessage.id, { isStreaming: false })
-    } catch (error) {
-      console.error('메시지 전송 오류:', error)
-      updateMessage(aiMessage.id, { 
-        content: '죄송합니다. 오류가 발생했습니다. 다시 시도해주세요.',
-        error: true,
-        isStreaming: false
-      })
+      // Mark streaming as complete
+      const index = messages.value.findIndex(m => m.id === aiMessage.id)
+      if (index !== -1) {
+        messages.value[index].isStreaming = false
+      }
+
+      // Update conversation title if it's the first message
+      if (messages.value.length === 2) {
+        conversationStore.updateConversationTitle(userMessage.content.slice(0, 50))
+      }
+
+    } catch (err) {
+      if (err.name !== 'AbortError') {
+        error.value = err.message || 'Failed to send message'
+        // Remove empty AI message on error
+        messages.value = messages.value.filter(m => m.id !== aiMessage.id)
+      }
     } finally {
       isLoading.value = false
-      currentStreamingMessageId.value = null
+      streamingMessageId.value = null
+      abortController.value = null
     }
   }
 
-  // 메시지 재시도
-  const retryMessage = async (messageId) => {
-    const message = messages.value.find(m => m.id === messageId)
-    if (!message || message.role !== 'assistant') return
-
-    const userMessageIndex = messages.value.findIndex(
-      (m, i) => i < messages.value.indexOf(message) && m.role === 'user'
-    )
-
-    if (userMessageIndex !== -1) {
-      const userMessage = messages.value[userMessageIndex]
-      
-      // 실패한 AI 메시지 제거
-      messages.value = messages.value.filter(m => m.id !== messageId)
-      
-      // 재전송
-      await sendMessage(userMessage.content, userMessage.conversationId, userMessage.files)
+  function stopStreaming() {
+    if (abortController.value) {
+      abortController.value.abort()
+      streamingMessageId.value = null
     }
   }
 
-  // 파일 추가
-  const addFileToMessage = (file) => {
-    // 파일 처리 로직
-    console.log('파일 추가:', file)
+  function clearMessages() {
+    messages.value = []
+    error.value = null
   }
 
-  // 메시지 불러오기
-  const loadMessages = async (conversationId) => {
-    try {
-      const loadedMessages = await getMessagesAPI(conversationId)
-      messages.value = loadedMessages
-    } catch (error) {
-      console.error('메시지 불러오기 오류:', error)
+  function loadMessages(conversationId) {
+    // Load messages from storage or API
+    const savedMessages = localStorage.getItem(`messages_${conversationId}`)
+    if (savedMessages) {
+      messages.value = JSON.parse(savedMessages)
+    } else {
       messages.value = []
     }
   }
 
-  // 메시지 초기화
-  const clearMessages = () => {
-    messages.value = []
-    currentStreamingMessageId.value = null
+  function saveMessages(conversationId) {
+    localStorage.setItem(`messages_${conversationId}`, JSON.stringify(messages.value))
   }
 
-  // 스트리밍 중단
-  const stopStreaming = () => {
-    if (currentStreamingMessageId.value) {
-      updateMessage(currentStreamingMessageId.value, { 
-        isStreaming: false,
-        stopped: true 
-      })
-      currentStreamingMessageId.value = null
-      isLoading.value = false
+  function deleteMessage(messageId) {
+    messages.value = messages.value.filter(m => m.id !== messageId)
+  }
+
+  function editMessage(messageId, newContent) {
+    const index = messages.value.findIndex(m => m.id === messageId)
+    if (index !== -1) {
+      messages.value[index].content = newContent
+      messages.value[index].edited = true
+      messages.value[index].editedAt = new Date().toISOString()
+    }
+  }
+
+  function copyMessage(messageId) {
+    const message = messages.value.find(m => m.id === messageId)
+    if (message) {
+      navigator.clipboard.writeText(message.content)
+    }
+  }
+
+  function regenerateLastMessage() {
+    // Find last user message
+    let lastUserMessage = null
+    for (let i = messages.value.length - 1; i >= 0; i--) {
+      if (messages.value[i].role === 'user') {
+        lastUserMessage = messages.value[i]
+        break
+      }
+    }
+
+    if (lastUserMessage) {
+      // Remove all messages after the last user message
+      const index = messages.value.indexOf(lastUserMessage)
+      messages.value = messages.value.slice(0, index + 1)
+
+      // Resend the message
+      sendUserMessage(lastUserMessage.content, lastUserMessage.attachments)
     }
   }
 
   return {
+    // State
     messages,
     isLoading,
-    currentStreamingMessageId,
-    addMessage,
-    updateMessage,
-    sendMessage,
-    retryMessage,
-    addFileToMessage,
-    loadMessages,
+    error,
+    streamingMessageId,
+
+    // Getters
+    hasMessages,
+    lastMessage,
+    isStreaming,
+
+    // Actions
+    sendUserMessage,
+    stopStreaming,
     clearMessages,
-    stopStreaming
+    loadMessages,
+    saveMessages,
+    deleteMessage,
+    editMessage,
+    copyMessage,
+    regenerateLastMessage
   }
 })

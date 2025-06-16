@@ -1,140 +1,167 @@
 <template>
   <div
     class="conversation-item"
-    :class="{ active }"
-    @click="$emit('click')"
+    :class="{ 'is-active': isActive }"
+    @click="handleSelect"
   >
     <div class="conversation-content">
-      <h4 class="conversation-title">{{ conversation.title }}</h4>
-      <p class="conversation-preview">{{ getPreview(conversation) }}</p>
+      <div v-if="!isEditing" class="conversation-info">
+        <h4 class="conversation-title">{{ conversation.title }}</h4>
+        <p v-if="conversation.preview" class="conversation-preview">
+          {{ conversation.preview }}
+        </p>
+      </div>
+
+      <input
+        v-else
+        v-model="editTitle"
+        @keydown.enter="saveRename"
+        @keydown.escape="cancelRename"
+        @click.stop
+        ref="editInput"
+        class="edit-input"
+        type="text"
+      />
     </div>
 
     <div class="conversation-actions" @click.stop>
       <button
-        class="action-btn"
-        @click="showMenu = !showMenu"
-        title="옵션"
+        v-if="!isEditing"
+        @click="startRename"
+        class="action-button"
+        title="Rename"
       >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-          <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z" fill="currentColor"/>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
         </svg>
       </button>
 
-      <!-- 드롭다운 메뉴 -->
-      <div v-if="showMenu" class="dropdown-menu">
-        <button @click="handleRename" class="menu-item">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-            <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" fill="currentColor"/>
-          </svg>
-          <span>이름 변경</span>
-        </button>
-        <button @click="handleDelete" class="menu-item delete">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-            <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" fill="currentColor"/>
-          </svg>
-          <span>삭제</span>
-        </button>
-      </div>
+      <button
+        v-if="!isEditing"
+        @click="handleDelete"
+        class="action-button delete"
+        title="Delete"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+        </svg>
+      </button>
+
+      <button
+        v-if="isEditing"
+        @click="saveRename"
+        class="action-button save"
+        title="Save"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+        </svg>
+      </button>
+
+      <button
+        v-if="isEditing"
+        @click="cancelRename"
+        class="action-button cancel"
+        title="Cancel"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, nextTick } from 'vue'
 
 const props = defineProps({
   conversation: {
     type: Object,
     required: true
   },
-  active: {
+  isActive: {
     type: Boolean,
     default: false
   }
 })
 
-const emit = defineEmits(['click', 'delete', 'rename'])
+const emit = defineEmits(['select', 'delete', 'rename'])
 
-const showMenu = ref(false)
+// State
+const isEditing = ref(false)
+const editTitle = ref('')
+const editInput = ref(null)
 
-// 대화 미리보기 생성
-const getPreview = (conversation) => {
-  // 최신 업데이트 시간을 미리보기로 사용
-  if (conversation.lastMessage) {
-    return conversation.lastMessage
-  }
-
-  const date = new Date(conversation.updatedAt || conversation.createdAt)
-  const now = new Date()
-  const diff = now - date
-
-  if (diff < 60000) { // 1분 이내
-    return '방금 전'
-  } else if (diff < 3600000) { // 1시간 이내
-    const minutes = Math.floor(diff / 60000)
-    return `${minutes}분 전`
-  } else if (diff < 86400000) { // 24시간 이내
-    const hours = Math.floor(diff / 3600000)
-    return `${hours}시간 전`
-  } else {
-    return date.toLocaleDateString('ko-KR')
+// Methods
+function handleSelect() {
+  if (!isEditing.value) {
+    emit('select', props.conversation.id)
   }
 }
 
-// 이름 변경
-const handleRename = () => {
-  showMenu.value = false
-  emit('rename')
-}
-
-// 삭제
-const handleDelete = () => {
-  showMenu.value = false
-  if (confirm('이 대화를 삭제하시겠습니까?')) {
-    emit('delete')
+function handleDelete() {
+  if (confirm('Delete this conversation?')) {
+    emit('delete', props.conversation.id)
   }
 }
 
-// 외부 클릭 감지
-const handleClickOutside = (event) => {
-  if (showMenu.value && !event.target.closest('.conversation-actions')) {
-    showMenu.value = false
-  }
+function startRename() {
+  isEditing.value = true
+  editTitle.value = props.conversation.title
+  nextTick(() => {
+    editInput.value?.focus()
+    editInput.value?.select()
+  })
 }
 
-onMounted(() => {
-  document.addEventListener('click', handleClickOutside)
-})
+function saveRename() {
+  const newTitle = editTitle.value.trim()
+  if (newTitle && newTitle !== props.conversation.title) {
+    emit('rename', props.conversation.id, newTitle)
+  }
+  isEditing.value = false
+}
 
-onUnmounted(() => {
-  document.removeEventListener('click', handleClickOutside)
-})
+function cancelRename() {
+  isEditing.value = false
+  editTitle.value = ''
+}
 </script>
 
-<style lang="scss" scoped>
+<style scoped>
 .conversation-item {
-  position: relative;
   display: flex;
   align-items: center;
-  padding: 12px 8px;
-  margin: 2px 0;
-  border-radius: 8px;
+  justify-content: space-between;
+  padding: var(--spacing-sm);
+  margin-bottom: var(--spacing-xs);
+  border-radius: var(--radius-md);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all var(--transition-fast);
+  position: relative;
 
   &:hover {
-    background-color: var(--hover-bg);
+    background-color: var(--color-background);
 
     .conversation-actions {
       opacity: 1;
     }
   }
 
-  &.active {
-    background-color: var(--bg-tertiary);
+  &.is-active {
+    background-color: var(--color-background);
 
-    .conversation-title {
-      font-weight: 600;
+    &::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 3px;
+      height: 70%;
+      background-color: var(--color-primary);
+      border-radius: var(--radius-sm);
     }
   }
 }
@@ -142,95 +169,102 @@ onUnmounted(() => {
 .conversation-content {
   flex: 1;
   min-width: 0;
-  padding-right: 8px;
+  padding-left: var(--spacing-xs);
+}
+
+.conversation-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
 }
 
 .conversation-title {
-  font-size: 14px;
+  font-size: var(--font-size-sm);
   font-weight: 500;
-  color: var(--text-primary);
-  white-space: nowrap;
+  color: var(--color-text-primary);
+  margin: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  margin-bottom: 2px;
+  white-space: nowrap;
 }
 
 .conversation-preview {
-  font-size: 12px;
-  color: var(--text-tertiary);
-  white-space: nowrap;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  margin: 0;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.edit-input {
+  width: 100%;
+  padding: var(--spacing-xs);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+  font-family: inherit;
+
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(217, 119, 87, 0.2);
+  }
 }
 
 .conversation-actions {
+  display: flex;
+  gap: var(--spacing-xs);
   opacity: 0;
-  transition: opacity 0.2s;
+  transition: opacity var(--transition-fast);
+}
 
-  .action-btn {
-    padding: 4px;
-    background: none;
-    border: none;
-    border-radius: 4px;
-    color: var(--text-secondary);
-    cursor: pointer;
-    transition: all 0.2s;
+.is-active .conversation-actions,
+.conversation-item:hover .conversation-actions {
+  opacity: 1;
+}
 
-    &:hover {
-      background-color: var(--bg-tertiary);
-      color: var(--text-primary);
-    }
+.action-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+
+  &:hover {
+    background-color: var(--color-sidebar);
+    color: var(--color-text-primary);
+  }
+
+  &.delete:hover {
+    color: #ef4444;
+  }
+
+  &.save:hover {
+    color: #10b981;
+  }
+
+  &.cancel:hover {
+    color: #f59e0b;
+  }
+
+  svg {
+    width: 16px;
+    height: 16px;
   }
 }
 
-.dropdown-menu {
-  position: absolute;
-  right: 8px;
-  top: 100%;
-  background-color: var(--bg-primary);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  padding: 4px;
-  min-width: 150px;
-  z-index: 100;
-
-  .menu-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    width: 100%;
-    padding: 8px 12px;
-    background: none;
-    border: none;
-    border-radius: 4px;
-    font-size: 14px;
-    color: var(--text-primary);
-    cursor: pointer;
-    transition: all 0.2s;
-    text-align: left;
-
-    &:hover {
-      background-color: var(--hover-bg);
-    }
-
-    &.delete {
-      color: #ef4444;
-
-      &:hover {
-        background-color: #fee2e2;
-      }
-    }
-  }
-}
-
-[data-theme="dark"] {
-  .dropdown-menu {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-
-    .menu-item.delete:hover {
-      background-color: rgba(239, 68, 68, 0.1);
-    }
+/* Mobile adjustments */
+@media (max-width: 768px) {
+  .conversation-actions {
+    opacity: 1;
   }
 }
 </style>
