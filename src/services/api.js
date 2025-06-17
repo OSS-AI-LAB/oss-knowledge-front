@@ -1,224 +1,146 @@
-import axios from 'axios'
+/**
+ * API 서비스 모듈
+ * 실제 백엔드와 통신하는 함수들을 정의합니다.
+ * 현재는 mock 구현이며, 실제 API 연동 시 수정이 필요합니다.
+ */
 
-// Configuration
+// API 기본 URL (환경변수로 관리 권장)
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api'
-const MOCK_MODE = import.meta.env.VITE_MOCK_API === 'true'
 
-// Create axios instance
-const api = axios.create({
-  baseURL: API_BASE_URL,
-  timeout: 30000,
-  headers: {
-    'Content-Type': 'application/json'
-  }
+// API 헤더 설정
+const getHeaders = () => ({
+  'Content-Type': 'application/json',
+  // 'Authorization': `Bearer ${getAuthToken()}` // 인증 토큰이 필요한 경우
 })
 
-// Request interceptor
-api.interceptors.request.use(
-  (config) => {
-    // Add auth token if available
-    const token = localStorage.getItem('authToken')
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`
-    }
-    return config
-  },
-  (error) => {
-    return Promise.reject(error)
-  }
-)
-
-// Response interceptor
-api.interceptors.response.use(
-  (response) => response.data,
-  (error) => {
-    if (error.response?.status === 401) {
-      // Handle unauthorized
-      localStorage.removeItem('authToken')
-      window.location.href = '/login'
-    }
-    return Promise.reject(error)
-  }
-)
-
-// Mock responses
-const mockResponses = [
-  "I understand you're looking for assistance. How can I help you today?",
-  "That's an interesting question. Let me think about that for a moment...",
-  "Based on what you've shared, here are my thoughts:",
-  "I'd be happy to help you with that. Could you provide more details?",
-  "Here's what I understand from your message:",
-  "Let me break this down for you:",
-  "That's a great point. Here's my perspective:",
-  "I appreciate you sharing that. Let me offer some insights:"
-]
-
-// Mock streaming function
-async function mockStream(onChunk, signal) {
-  const response = mockResponses[Math.floor(Math.random() * mockResponses.length)]
-  const words = response.split(' ')
-
-  for (let i = 0; i < words.length; i++) {
-    if (signal?.aborted) break
-
-    await new Promise(resolve => setTimeout(resolve, 50 + Math.random() * 100))
-    onChunk(words[i] + (i < words.length - 1 ? ' ' : ''))
-  }
-}
-
-// API functions
-export async function sendMessage(content, attachments = []) {
-  if (MOCK_MODE) {
-    // Mock response
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    return {
-      id: `msg_${Date.now()}`,
-      content: mockResponses[Math.floor(Math.random() * mockResponses.length)],
-      role: 'assistant',
-      timestamp: new Date().toISOString()
-    }
-  }
-
-  return api.post('/messages', {
-    content,
-    attachments
-  })
-}
-
-export async function streamMessage(content, attachments = [], onChunk, signal) {
-  if (MOCK_MODE) {
-    return mockStream(onChunk, signal)
-  }
-
-  // Real streaming implementation
-  const response = await fetch(`${API_BASE_URL}/messages/stream`, {
+/**
+ * 메시지 전송 API
+ * @param {Object} payload - 메시지 정보
+ * @returns {Promise} 응답 스트림
+ */
+export const sendMessageAPI = async (payload) => {
+  // Mock 구현 - 실제 API 연동 시 아래와 같이 구현
+  /*
+  const response = await fetch(`${API_BASE_URL}/chat/messages`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}`
-    },
-    body: JSON.stringify({ content, attachments }),
-    signal
+    headers: getHeaders(),
+    body: JSON.stringify(payload)
   })
 
   if (!response.ok) {
-    throw new Error(`HTTP error! status: ${response.status}`)
+    throw new Error(`API Error: ${response.status}`)
   }
 
-  const reader = response.body.getReader()
-  const decoder = new TextDecoder()
+  // 스트리밍 응답 처리
+  return response.body.getReader()
+  */
 
-  while (true) {
-    const { done, value } = await reader.read()
-    if (done) break
-
-    const chunk = decoder.decode(value, { stream: true })
-    const lines = chunk.split('\n')
-
-    for (const line of lines) {
-      if (line.startsWith('data: ')) {
-        const data = line.slice(6)
-        if (data === '[DONE]') {
-          return
+  // Mock 응답
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve({
+        data: {
+          message: 'Mock API 응답입니다.',
+          conversationId: payload.conversationId
         }
-        try {
-          const json = JSON.parse(data)
-          if (json.content) {
-            onChunk(json.content)
-          }
-        } catch (e) {
-          console.error('Error parsing SSE data:', e)
-        }
-      }
-    }
-  }
-}
-
-export async function getConversations() {
-  if (MOCK_MODE) {
-    // Return mock conversations from localStorage
-    const saved = localStorage.getItem('conversations')
-    return saved ? JSON.parse(saved) : []
-  }
-
-  return api.get('/conversations')
-}
-
-export async function getConversation(id) {
-  if (MOCK_MODE) {
-    const conversations = JSON.parse(localStorage.getItem('conversations') || '[]')
-    return conversations.find(c => c.id === id)
-  }
-
-  return api.get(`/conversations/${id}`)
-}
-
-export async function createConversation(title) {
-  if (MOCK_MODE) {
-    const conversation = {
-      id: `conv_${Date.now()}`,
-      title,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    }
-
-    const conversations = JSON.parse(localStorage.getItem('conversations') || '[]')
-    conversations.unshift(conversation)
-    localStorage.setItem('conversations', JSON.stringify(conversations))
-
-    return conversation
-  }
-
-  return api.post('/conversations', { title })
-}
-
-export async function updateConversation(id, updates) {
-  if (MOCK_MODE) {
-    const conversations = JSON.parse(localStorage.getItem('conversations') || '[]')
-    const index = conversations.findIndex(c => c.id === id)
-    if (index !== -1) {
-      conversations[index] = { ...conversations[index], ...updates }
-      localStorage.setItem('conversations', JSON.stringify(conversations))
-      return conversations[index]
-    }
-    throw new Error('Conversation not found')
-  }
-
-  return api.patch(`/conversations/${id}`, updates)
-}
-
-export async function deleteConversation(id) {
-  if (MOCK_MODE) {
-    const conversations = JSON.parse(localStorage.getItem('conversations') || '[]')
-    const filtered = conversations.filter(c => c.id !== id)
-    localStorage.setItem('conversations', JSON.stringify(filtered))
-    return { success: true }
-  }
-
-  return api.delete(`/conversations/${id}`)
-}
-
-export async function uploadFile(file) {
-  if (MOCK_MODE) {
-    // Mock file upload
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    return {
-      id: `file_${Date.now()}`,
-      name: file.name,
-      size: file.size,
-      type: file.type,
-      url: URL.createObjectURL(file)
-    }
-  }
-
-  const formData = new FormData()
-  formData.append('file', file)
-
-  return api.post('/files/upload', formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data'
-    }
+      })
+    }, 1000)
   })
 }
 
-export default api
+/**
+ * 대화 목록 조회 API
+ * @returns {Promise<Array>} 대화 목록
+ */
+export const getConversationsAPI = async () => {
+  // Mock 구현
+  return new Promise((resolve) => {
+    resolve({
+      data: []
+    })
+  })
+}
+
+/**
+ * 대화 삭제 API
+ * @param {string} conversationId - 대화 ID
+ * @returns {Promise}
+ */
+export const deleteConversationAPI = async (conversationId) => {
+  // Mock 구현
+  return new Promise((resolve) => {
+    resolve({
+      success: true
+    })
+  })
+}
+
+/**
+ * 파일 업로드 API
+ * @param {File} file - 업로드할 파일
+ * @returns {Promise<Object>} 업로드된 파일 정보
+ */
+export const uploadFileAPI = async (file) => {
+  const formData = new FormData()
+  formData.append('file', file)
+
+  // Mock 구현
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve({
+        data: {
+          fileId: Date.now().toString(),
+          fileName: file.name,
+          fileSize: file.size,
+          fileType: file.type,
+          url: URL.createObjectURL(file)
+        }
+      })
+    }, 500)
+  })
+}
+
+/**
+ * WebSocket 연결 (실시간 스트리밍용)
+ * @param {string} conversationId - 대화 ID
+ * @returns {WebSocket}
+ */
+export const createWebSocketConnection = (conversationId) => {
+  // 실제 구현 예시
+  /*
+  const ws = new WebSocket(`${API_BASE_URL.replace('http', 'ws')}/chat/stream/${conversationId}`)
+
+  ws.onopen = () => {
+    console.log('WebSocket 연결됨')
+  }
+
+  ws.onerror = (error) => {
+    console.error('WebSocket 에러:', error)
+  }
+
+  return ws
+  */
+
+  return null
+}
+
+/**
+ * Server-Sent Events 연결 (실시간 스트리밍용)
+ * @param {string} conversationId - 대화 ID
+ * @returns {EventSource}
+ */
+export const createSSEConnection = (conversationId) => {
+  // 실제 구현 예시
+  /*
+  const eventSource = new EventSource(`${API_BASE_URL}/chat/stream/${conversationId}`)
+
+  eventSource.onerror = (error) => {
+    console.error('SSE 에러:', error)
+    eventSource.close()
+  }
+
+  return eventSource
+  */
+
+  return null
+}

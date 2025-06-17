@@ -1,139 +1,87 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { v4 as uuidv4 } from 'uuid'
 
 export const useConversationStore = defineStore('conversation', () => {
-  // State
-  const conversations = ref([])
-  const currentConversationId = ref(null)
+  // 대화 목록
+  const conversations = ref([
+    {
+      id: '1',
+      title: '새 채팅',
+      messages: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    }
+  ])
+
+  // 현재 선택된 대화 ID
+  const currentConversationId = ref('1')
+
+  // 검색어
   const searchQuery = ref('')
 
-  // Getters
-  const currentConversation = computed(() =>
-    conversations.value.find(c => c.id === currentConversationId.value)
-  )
+  // 현재 대화 가져오기
+  const currentConversation = computed(() => {
+    return conversations.value.find(c => c.id === currentConversationId.value)
+  })
 
+  // 필터링된 대화 목록
   const filteredConversations = computed(() => {
     if (!searchQuery.value) {
       return conversations.value
     }
 
-    const query = searchQuery.value.toLowerCase()
     return conversations.value.filter(conv =>
-      conv.title.toLowerCase().includes(query) ||
-      conv.preview?.toLowerCase().includes(query)
+      conv.title.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+      conv.messages.some(msg =>
+        msg.content.toLowerCase().includes(searchQuery.value.toLowerCase())
+      )
     )
   })
 
-  const sortedConversations = computed(() => {
-    return [...filteredConversations.value].sort((a, b) =>
-      new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-    )
-  })
-
-  const conversationsByDate = computed(() => {
-    const groups = {
-      today: [],
-      yesterday: [],
-      thisWeek: [],
-      thisMonth: [],
-      older: []
-    }
-
-    const now = new Date()
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-    const yesterday = new Date(today)
-    yesterday.setDate(yesterday.getDate() - 1)
-    const weekAgo = new Date(today)
-    weekAgo.setDate(weekAgo.getDate() - 7)
-    const monthAgo = new Date(today)
-    monthAgo.setMonth(monthAgo.getMonth() - 1)
-
-    sortedConversations.value.forEach(conv => {
-      const convDate = new Date(conv.updatedAt)
-
-      if (convDate >= today) {
-        groups.today.push(conv)
-      } else if (convDate >= yesterday) {
-        groups.yesterday.push(conv)
-      } else if (convDate >= weekAgo) {
-        groups.thisWeek.push(conv)
-      } else if (convDate >= monthAgo) {
-        groups.thisMonth.push(conv)
-      } else {
-        groups.older.push(conv)
-      }
-    })
-
-    return groups
-  })
-
-  // Actions
-  function createConversation(title = 'New conversation') {
-    const conversation = {
-      id: uuidv4(),
-      title,
-      preview: '',
+  // 새 대화 생성
+  const createNewConversation = () => {
+    const newConv = {
+      id: Date.now().toString(),
+      title: '새 채팅',
+      messages: [],
       createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      messageCount: 0,
-      archived: false
+      updatedAt: new Date().toISOString()
     }
 
-    conversations.value.unshift(conversation)
-    currentConversationId.value = conversation.id
+    conversations.value.unshift(newConv)
+    currentConversationId.value = newConv.id
     saveToLocalStorage()
 
-    return conversation
+    return newConv
   }
 
-  function selectConversation(conversationId) {
-    currentConversationId.value = conversationId
+  // 대화 선택
+  const selectConversation = (id) => {
+    currentConversationId.value = id
   }
 
-  function updateConversationTitle(title) {
-    const conv = currentConversation.value
-    if (conv) {
-      conv.title = title
-      conv.updatedAt = new Date().toISOString()
+  // 대화 삭제
+  const deleteConversation = (id) => {
+    const index = conversations.value.findIndex(c => c.id === id)
+    if (index > -1) {
+      conversations.value.splice(index, 1)
+
+      // 현재 대화가 삭제된 경우 새 대화 생성
+      if (currentConversationId.value === id) {
+        if (conversations.value.length > 0) {
+          currentConversationId.value = conversations.value[0].id
+        } else {
+          createNewConversation()
+        }
+      }
+
       saveToLocalStorage()
     }
   }
 
-  function updateConversationPreview(preview) {
-    const conv = currentConversation.value
-    if (conv) {
-      conv.preview = preview.slice(0, 100)
-      conv.updatedAt = new Date().toISOString()
-      conv.messageCount = (conv.messageCount || 0) + 1
-      saveToLocalStorage()
-    }
-  }
-
-  function deleteConversation(conversationId) {
-    conversations.value = conversations.value.filter(c => c.id !== conversationId)
-
-    // If deleted current conversation, select another one
-    if (currentConversationId.value === conversationId) {
-      currentConversationId.value = conversations.value[0]?.id || null
-    }
-
-    // Also delete messages from localStorage
-    localStorage.removeItem(`messages_${conversationId}`)
-    saveToLocalStorage()
-  }
-
-  function archiveConversation(conversationId) {
-    const conv = conversations.value.find(c => c.id === conversationId)
-    if (conv) {
-      conv.archived = true
-      conv.updatedAt = new Date().toISOString()
-      saveToLocalStorage()
-    }
-  }
-
-  function renameConversation(conversationId, newTitle) {
-    const conv = conversations.value.find(c => c.id === conversationId)
+  // 대화 제목 변경
+  const updateConversationTitle = (id, newTitle) => {
+    const conv = conversations.value.find(c => c.id === id)
     if (conv) {
       conv.title = newTitle
       conv.updatedAt = new Date().toISOString()
@@ -141,28 +89,40 @@ export const useConversationStore = defineStore('conversation', () => {
     }
   }
 
-  function clearConversations() {
-    // Clear all conversations and their messages
-    conversations.value.forEach(conv => {
-      localStorage.removeItem(`messages_${conv.id}`)
-    })
+  // 메시지 추가
+  const addMessage = (conversationId, message) => {
+    const conv = conversations.value.find(c => c.id === conversationId)
+    if (conv) {
+      conv.messages.push({
+        ...message,
+        id: Date.now().toString(),
+        timestamp: new Date().toISOString()
+      })
+      conv.updatedAt = new Date().toISOString()
 
-    conversations.value = []
-    currentConversationId.value = null
-    saveToLocalStorage()
+      // 첫 메시지인 경우 제목 자동 생성
+      if (conv.messages.length === 1 && message.role === 'user') {
+        conv.title = message.content.slice(0, 30) + (message.content.length > 30 ? '...' : '')
+      }
+
+      // 대화 목록 최상단으로 이동
+      const index = conversations.value.findIndex(c => c.id === conversationId)
+      if (index > 0) {
+        conversations.value.unshift(conversations.value.splice(index, 1)[0])
+      }
+
+      saveToLocalStorage()
+    }
   }
 
-  function setSearchQuery(query) {
-    searchQuery.value = query
-  }
-
-  // Local storage
-  function saveToLocalStorage() {
+  // 로컬 스토리지에 저장
+  const saveToLocalStorage = () => {
     localStorage.setItem('conversations', JSON.stringify(conversations.value))
-    localStorage.setItem('currentConversationId', currentConversationId.value || '')
+    localStorage.setItem('currentConversationId', currentConversationId.value)
   }
 
-  function loadFromLocalStorage() {
+  // 로컬 스토리지에서 불러오기
+  const loadFromLocalStorage = () => {
     const saved = localStorage.getItem('conversations')
     if (saved) {
       conversations.value = JSON.parse(saved)
@@ -171,37 +131,20 @@ export const useConversationStore = defineStore('conversation', () => {
     const savedId = localStorage.getItem('currentConversationId')
     if (savedId && conversations.value.find(c => c.id === savedId)) {
       currentConversationId.value = savedId
-    } else if (conversations.value.length > 0) {
-      currentConversationId.value = conversations.value[0].id
     }
   }
 
-  // Initialize
-  loadFromLocalStorage()
-
   return {
-    // State
     conversations,
     currentConversationId,
     searchQuery,
-
-    // Getters
     currentConversation,
     filteredConversations,
-    sortedConversations,
-    conversationsByDate,
-
-    // Actions
-    createConversation,
+    createNewConversation,
     selectConversation,
-    updateConversationTitle,
-    updateConversationPreview,
     deleteConversation,
-    archiveConversation,
-    renameConversation,
-    clearConversations,
-    setSearchQuery,
-    saveToLocalStorage,
+    updateConversationTitle,
+    addMessage,
     loadFromLocalStorage
   }
 })

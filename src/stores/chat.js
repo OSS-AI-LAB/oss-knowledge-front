@@ -1,181 +1,122 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
-import { sendMessage, streamMessage } from '@/services/api'
+import { ref } from 'vue'
 import { useConversationStore } from './conversation'
+import { useUIStore } from './ui'
 
 export const useChatStore = defineStore('chat', () => {
-  // State
-  const messages = ref([])
-  const isLoading = ref(false)
-  const error = ref(null)
-  const streamingMessageId = ref(null)
-  const abortController = ref(null)
+  const conversationStore = useConversationStore()
+  const uiStore = useUIStore()
 
-  // Getters
-  const hasMessages = computed(() => messages.value.length > 0)
-  const lastMessage = computed(() => messages.value[messages.value.length - 1])
-  const isStreaming = computed(() => streamingMessageId.value !== null)
+  // 채팅 상태
+  const isStreaming = ref(false)
+  const streamingMessage = ref('')
+  const uploadedFiles = ref([])
 
-  // Actions
-  async function sendUserMessage(content, attachments = []) {
-    const conversationStore = useConversationStore()
+  // 메시지 전송
+  const sendMessage = async (content, files = []) => {
+    if (!content.trim() && files.length === 0) return
 
-    // Add user message
+    const currentConvId = conversationStore.currentConversationId
+
+    // 사용자 메시지 추가
     const userMessage = {
-      id: `msg_${Date.now()}`,
       role: 'user',
       content,
-      attachments,
-      timestamp: new Date().toISOString(),
-      conversationId: conversationStore.currentConversationId
+      files: files.map(f => ({
+        name: f.name,
+        type: f.type,
+        size: f.size
+      }))
     }
 
-    messages.value.push(userMessage)
+    conversationStore.addMessage(currentConvId, userMessage)
 
-    // Create AI message placeholder
-    const aiMessage = {
-      id: `msg_${Date.now() + 1}`,
-      role: 'assistant',
-      content: '',
-      timestamp: new Date().toISOString(),
-      conversationId: conversationStore.currentConversationId,
-      isStreaming: true
-    }
+    // AI 응답 시뮬레이션
+    isStreaming.value = true
+    streamingMessage.value = ''
 
-    messages.value.push(aiMessage)
-    streamingMessageId.value = aiMessage.id
+    // Mock 응답 생성
+    const mockResponse = generateMockResponse(content)
 
-    try {
-      isLoading.value = true
-      error.value = null
+    // 스트리밍 효과 시뮬레이션
+    let index = 0
+    const streamInterval = setInterval(() => {
+      if (index < mockResponse.length) {
+        streamingMessage.value += mockResponse[index]
+        index++
+      } else {
+        clearInterval(streamInterval)
 
-      // Create abort controller for cancellation
-      abortController.value = new AbortController()
+        // 완성된 메시지 추가
+        conversationStore.addMessage(currentConvId, {
+          role: 'assistant',
+          content: streamingMessage.value
+        })
 
-      // Stream response
-      await streamMessage(
-        content,
-        attachments,
-        (chunk) => {
-          const index = messages.value.findIndex(m => m.id === aiMessage.id)
-          if (index !== -1) {
-            messages.value[index].content += chunk
-          }
-        },
-        abortController.value.signal
-      )
-
-      // Mark streaming as complete
-      const index = messages.value.findIndex(m => m.id === aiMessage.id)
-      if (index !== -1) {
-        messages.value[index].isStreaming = false
+        isStreaming.value = false
+        streamingMessage.value = ''
       }
+    }, 20) // 20ms 간격으로 문자 추가
 
-      // Update conversation title if it's the first message
-      if (messages.value.length === 2) {
-        conversationStore.updateConversationTitle(userMessage.content.slice(0, 50))
-      }
-
-    } catch (err) {
-      if (err.name !== 'AbortError') {
-        error.value = err.message || 'Failed to send message'
-        // Remove empty AI message on error
-        messages.value = messages.value.filter(m => m.id !== aiMessage.id)
-      }
-    } finally {
-      isLoading.value = false
-      streamingMessageId.value = null
-      abortController.value = null
-    }
+    // 업로드된 파일 초기화
+    uploadedFiles.value = []
   }
 
-  function stopStreaming() {
-    if (abortController.value) {
-      abortController.value.abort()
-      streamingMessageId.value = null
-    }
+  // Mock 응답 생성
+  const generateMockResponse = (userInput) => {
+    const responses = [
+      `안녕하세요! "${userInput}"에 대해 도움을 드리겠습니다.\n\n이것은 시뮬레이션된 응답입니다. 실제 구현에서는 백엔드 API와 연동하여 실시간 응답을 받게 됩니다.`,
+      `"${userInput}"는 흥미로운 주제네요!\n\n여기에 대해 더 자세히 설명드리면:\n1. 첫 번째 포인트\n2. 두 번째 포인트\n3. 세 번째 포인트\n\n추가로 궁금한 점이 있으시면 말씀해 주세요.`,
+      `네, 이해했습니다. "${userInput}"에 대한 답변입니다.\n\n\`\`\`javascript\n// 예시 코드\nconst example = () => {\n  console.log('Hello, World!');\n};\n\`\`\`\n\n이 코드는 예시입니다. 실제 상황에 맞게 수정해서 사용하세요.`
+    ]
+
+    return responses[Math.floor(Math.random() * responses.length)]
   }
 
-  function clearMessages() {
-    messages.value = []
-    error.value = null
-  }
+  // 파일 추가
+  const addFile = (file) => {
+    // 파일 유효성 검사
+    const allowedTypes = ['text/plain', 'image/png', 'image/jpeg', 'image/jpg', 'application/pdf']
+    const maxSize = 10 * 1024 * 1024 // 10MB
 
-  function loadMessages(conversationId) {
-    // Load messages from storage or API
-    const savedMessages = localStorage.getItem(`messages_${conversationId}`)
-    if (savedMessages) {
-      messages.value = JSON.parse(savedMessages)
-    } else {
-      messages.value = []
-    }
-  }
-
-  function saveMessages(conversationId) {
-    localStorage.setItem(`messages_${conversationId}`, JSON.stringify(messages.value))
-  }
-
-  function deleteMessage(messageId) {
-    messages.value = messages.value.filter(m => m.id !== messageId)
-  }
-
-  function editMessage(messageId, newContent) {
-    const index = messages.value.findIndex(m => m.id === messageId)
-    if (index !== -1) {
-      messages.value[index].content = newContent
-      messages.value[index].edited = true
-      messages.value[index].editedAt = new Date().toISOString()
-    }
-  }
-
-  function copyMessage(messageId) {
-    const message = messages.value.find(m => m.id === messageId)
-    if (message) {
-      navigator.clipboard.writeText(message.content)
-    }
-  }
-
-  function regenerateLastMessage() {
-    // Find last user message
-    let lastUserMessage = null
-    for (let i = messages.value.length - 1; i >= 0; i--) {
-      if (messages.value[i].role === 'user') {
-        lastUserMessage = messages.value[i]
-        break
-      }
+    if (!allowedTypes.includes(file.type)) {
+      uiStore.setError('지원하지 않는 파일 형식입니다. (txt, png, jpg, pdf만 가능)')
+      return false
     }
 
-    if (lastUserMessage) {
-      // Remove all messages after the last user message
-      const index = messages.value.indexOf(lastUserMessage)
-      messages.value = messages.value.slice(0, index + 1)
+    if (file.size > maxSize) {
+      uiStore.setError('파일 크기는 10MB 이하여야 합니다.')
+      return false
+    }
 
-      // Resend the message
-      sendUserMessage(lastUserMessage.content, lastUserMessage.attachments)
+    uploadedFiles.value.push(file)
+    return true
+  }
+
+  // 파일 제거
+  const removeFile = (index) => {
+    uploadedFiles.value.splice(index, 1)
+  }
+
+  // 스트리밍 중단
+  const stopStreaming = () => {
+    isStreaming.value = false
+    if (streamingMessage.value) {
+      conversationStore.addMessage(conversationStore.currentConversationId, {
+        role: 'assistant',
+        content: streamingMessage.value
+      })
+      streamingMessage.value = ''
     }
   }
 
   return {
-    // State
-    messages,
-    isLoading,
-    error,
-    streamingMessageId,
-
-    // Getters
-    hasMessages,
-    lastMessage,
     isStreaming,
-
-    // Actions
-    sendUserMessage,
-    stopStreaming,
-    clearMessages,
-    loadMessages,
-    saveMessages,
-    deleteMessage,
-    editMessage,
-    copyMessage,
-    regenerateLastMessage
+    streamingMessage,
+    uploadedFiles,
+    sendMessage,
+    addFile,
+    removeFile,
+    stopStreaming
   }
 })

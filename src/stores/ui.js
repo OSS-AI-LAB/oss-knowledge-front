@@ -2,143 +2,77 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 
 export const useUIStore = defineStore('ui', () => {
-  // State
-  const sidebarVisible = ref(true)
-  const isMobile = ref(false)
-  const isDarkMode = ref(false)
-  const showSettings = ref(false)
-  const showKeyboardShortcuts = ref(false)
+  // 사이드바 상태
+  const isSidebarOpen = ref(window.innerWidth >= 768)
+  const isMobile = ref(window.innerWidth < 768)
 
-  // Initialize from localStorage
-  const savedSidebarState = localStorage.getItem('sidebarVisible')
-  if (savedSidebarState !== null) {
-    sidebarVisible.value = savedSidebarState === 'true'
+  // 로딩 상태
+  const isLoading = ref(false)
+  const loadingMessage = ref('')
+
+  // 에러 상태
+  const error = ref(null)
+  const errorMessage = ref('')
+
+  // 사이드바 토글
+  const toggleSidebar = () => {
+    isSidebarOpen.value = !isSidebarOpen.value
+    // 세션 저장
+    localStorage.setItem('sidebarOpen', isSidebarOpen.value)
   }
 
-  const savedDarkMode = localStorage.getItem('darkMode')
-  if (savedDarkMode !== null) {
-    isDarkMode.value = savedDarkMode === 'true'
-  } else {
-    // Check system preference
-    isDarkMode.value = window.matchMedia('(prefers-color-scheme: dark)').matches
+  // 사이드바 상태 초기화
+  const initSidebar = () => {
+    const saved = localStorage.getItem('sidebarOpen')
+    if (saved !== null) {
+      isSidebarOpen.value = saved === 'true'
+    }
   }
 
-  // Check if mobile
-  const checkMobile = () => {
+  // 로딩 상태 설정
+  const setLoading = (loading, message = '') => {
+    isLoading.value = loading
+    loadingMessage.value = message
+  }
+
+  // 에러 설정
+  const setError = (errorMsg) => {
+    error.value = true
+    errorMessage.value = errorMsg
+
+    // 5초 후 에러 메시지 자동 제거
+    setTimeout(() => {
+      error.value = false
+      errorMessage.value = ''
+    }, 5000)
+  }
+
+  // 에러 초기화
+  const clearError = () => {
+    error.value = false
+    errorMessage.value = ''
+  }
+
+  // 화면 크기 체크
+  const checkScreenSize = () => {
     isMobile.value = window.innerWidth < 768
-    // Auto-hide sidebar on mobile
-    if (isMobile.value && sidebarVisible.value) {
-      sidebarVisible.value = false
+    if (isMobile.value && isSidebarOpen.value) {
+      isSidebarOpen.value = false
     }
   }
-
-  checkMobile()
-  window.addEventListener('resize', checkMobile)
-
-  // Getters
-  const sidebarWidth = computed(() => {
-    if (!sidebarVisible.value) return '0px'
-    if (isMobile.value) return '100%'
-    return '260px'
-  })
-
-  // Actions
-  function toggleSidebar() {
-    sidebarVisible.value = !sidebarVisible.value
-    localStorage.setItem('sidebarVisible', sidebarVisible.value.toString())
-  }
-
-  function showSidebar() {
-    sidebarVisible.value = true
-    localStorage.setItem('sidebarVisible', 'true')
-  }
-
-  function hideSidebar() {
-    sidebarVisible.value = false
-    localStorage.setItem('sidebarVisible', 'false')
-  }
-
-  function toggleDarkMode() {
-    isDarkMode.value = !isDarkMode.value
-    localStorage.setItem('darkMode', isDarkMode.value.toString())
-    updateDarkMode()
-  }
-
-  function setDarkMode(value) {
-    isDarkMode.value = value
-    localStorage.setItem('darkMode', value.toString())
-    updateDarkMode()
-  }
-
-  function updateDarkMode() {
-    if (isDarkMode.value) {
-      document.documentElement.classList.add('dark')
-    } else {
-      document.documentElement.classList.remove('dark')
-    }
-  }
-
-  function toggleSettings() {
-    showSettings.value = !showSettings.value
-  }
-
-  function toggleKeyboardShortcuts() {
-    showKeyboardShortcuts.value = !showKeyboardShortcuts.value
-  }
-
-  // Initialize dark mode
-  updateDarkMode()
-
-  // Keyboard shortcuts
-  function initKeyboardShortcuts() {
-    window.addEventListener('keydown', (e) => {
-      // Cmd/Ctrl + K: New conversation
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-        e.preventDefault()
-        // Trigger new conversation
-        window.dispatchEvent(new CustomEvent('new-conversation'))
-      }
-
-      // Cmd/Ctrl + Shift + S: Toggle sidebar
-      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'S') {
-        e.preventDefault()
-        toggleSidebar()
-      }
-
-      // Cmd/Ctrl + Shift + D: Toggle dark mode
-      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'D') {
-        e.preventDefault()
-        toggleDarkMode()
-      }
-
-      // Escape: Close modals
-      if (e.key === 'Escape') {
-        showSettings.value = false
-        showKeyboardShortcuts.value = false
-      }
-    })
-  }
-
-  initKeyboardShortcuts()
 
   return {
-    // State
-    sidebarVisible,
+    isSidebarOpen,
     isMobile,
-    isDarkMode,
-    showSettings,
-    showKeyboardShortcuts,
-
-    // Getters
-    sidebarWidth,
-
-    // Actions
+    isLoading,
+    loadingMessage,
+    error,
+    errorMessage,
     toggleSidebar,
-    showSidebar,
-    hideSidebar,
-    toggleDarkMode,
-    setDarkMode,
-    toggleSettings,
-    toggleKeyboardShortcuts
+    initSidebar,
+    setLoading,
+    setError,
+    clearError,
+    checkScreenSize
   }
 })

@@ -1,62 +1,19 @@
 <template>
-  <div class="loading-spinner" :class="sizeClass">
-    <div class="spinner">
-      <div class="spinner-ring"></div>
+  <div class="flex items-center justify-center p-4">
+    <div class="relative">
+      <div class="w-8 h-8 border-4 border-claude-border rounded-full animate-spin border-t-claude-orange"></div>
+      <div v-if="message" class="absolute -bottom-6 left-1/2 transform -translate-x-1/2 whitespace-nowrap text-sm text-claude-muted">
+        {{ message }}
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { computed } from 'vue'
-
-const props = defineProps({
-  size: {
+defineProps({
+  message: {
     type: String,
-    default: 'medium',
-    validator: (value) => ['small', 'medium', 'large'].includes(value)
+    default: ''
   }
 })
-
-const sizeClass = computed(() => `spinner-${props.size}`)
 </script>
-
-<style scoped>
-.loading-spinner {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.spinner {
-  position: relative;
-}
-
-.spinner-ring {
-  border-radius: 50%;
-  border: 2px solid var(--color-border);
-  border-top-color: var(--color-primary);
-  animation: spin 0.8s linear infinite;
-}
-
-/* Size variants */
-.spinner-small .spinner-ring {
-  width: 16px;
-  height: 16px;
-}
-
-.spinner-medium .spinner-ring {
-  width: 24px;
-  height: 24px;
-}
-
-.spinner-large .spinner-ring {
-  width: 32px;
-  height: 32px;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-</style>
