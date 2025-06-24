@@ -1,12 +1,12 @@
 <template>
-  <div class="flex flex-col h-full bg-gray-50">
-    <!-- 메시지 리스트 -->
-    <div class="flex-1 overflow-hidden">
+  <div class="flex flex-col h-full bg-gray-50 min-h-0">
+    <!-- 메시지 리스트 - 고정 높이 보장 -->
+    <div class="flex-1 min-h-0 overflow-hidden">
       <MessageList />
     </div>
 
-    <!-- 입력 영역 - 메시지 영역과 통합된 디자인 -->
-    <div class="bg-gray-50 pb-6">
+    <!-- 입력 영역 - 고정 높이 -->
+    <div class="flex-shrink-0 bg-gray-50 pb-6">
       <div class="max-w-4xl mx-auto px-6">
         <ChatInput />
       </div>
