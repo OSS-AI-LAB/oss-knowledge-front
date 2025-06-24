@@ -13,6 +13,7 @@ export const useChatStore = defineStore("chat", () => {
     const streamingMessage = ref("");
     const uploadedFiles = ref([]);
     const abortController = ref(null);
+    const currentStatus = ref(""); // 현재 처리 상태
 
     // 메시지 전송
     const sendMessage = async (content, files = []) => {
@@ -49,6 +50,7 @@ export const useChatStore = defineStore("chat", () => {
             // AI 응답 요청
             isStreaming.value = true;
             streamingMessage.value = "";
+            currentStatus.value = "요청 처리 중...";
 
             // API 요청 페이로드
             const payload = {
@@ -64,14 +66,34 @@ export const useChatStore = defineStore("chat", () => {
                 // onChunk - 스트림 데이터 수신
                 (chunk) => {
                     console.log("Received chunk:", chunk);
+                    
+                    // 백엔드에서 보내는 다양한 청크 타입 처리
                     if (typeof chunk === "string") {
                         // 텍스트 청크인 경우
                         streamingMessage.value += chunk;
                     } else if (chunk.content) {
-                        // JSON 객체인 경우
+                        // 텍스트 컨텐츠 청크
                         streamingMessage.value += chunk.content;
+                    } else if (chunk.status) {
+                        // 상태 업데이트
+                        currentStatus.value = chunk.status;
+                        console.log("Status update:", chunk.status, chunk.stage);
+                    } else if (chunk.search_complete) {
+                        // 검색 완료
+                        currentStatus.value = `${chunk.sources_count}개의 관련 정보를 찾았습니다. 답변 생성 중...`;
+                    } else if (chunk.complete) {
+                        // 처리 완료
+                        currentStatus.value = `완료 (${chunk.processing_time?.toFixed(2)}초)`;
+                        console.log("Processing complete:", chunk);
+                    } else if (chunk.error) {
+                        // 에러 처리
+                        console.error("Stream error:", chunk.error);
+                        if (chunk.content) {
+                            streamingMessage.value += chunk.content;
+                        }
+                        uiStore.setError(chunk.error);
                     } else if (chunk.delta && chunk.delta.content) {
-                        // OpenAI 스타일 델타 응답
+                        // OpenAI 스타일 델타 응답 (호환성)
                         streamingMessage.value += chunk.delta.content;
                     }
                 },
@@ -80,12 +102,13 @@ export const useChatStore = defineStore("chat", () => {
                     console.error("Streaming error:", error);
                     uiStore.setError("응답 생성 중 오류가 발생했습니다.");
                     isStreaming.value = false;
+                    currentStatus.value = "";
 
                     // 부분 응답이 있으면 저장
                     if (streamingMessage.value.trim()) {
                         conversationStore.addMessage(currentConvId, {
                             role: "assistant",
-                            content: streamingMessage.value,
+                            content: streamingMessage.value + "\n\n*[오류로 인해 응답이 중단되었습니다]*",
                         });
                     }
 
@@ -104,6 +127,7 @@ export const useChatStore = defineStore("chat", () => {
 
                     isStreaming.value = false;
                     streamingMessage.value = "";
+                    currentStatus.value = "";
                     abortController.value = null;
                 }
             );
@@ -115,6 +139,7 @@ export const useChatStore = defineStore("chat", () => {
             uiStore.setError("메시지 전송에 실패했습니다.");
             isStreaming.value = false;
             streamingMessage.value = "";
+            currentStatus.value = "";
             abortController.value = null;
         }
     };
@@ -185,12 +210,14 @@ export const useChatStore = defineStore("chat", () => {
         }
 
         streamingMessage.value = "";
+        currentStatus.value = "";
     };
 
     return {
         isStreaming,
         streamingMessage,
         uploadedFiles,
+        currentStatus, // 추가: 현재 처리 상태
         sendMessage,
         addFile,
         removeFile,
