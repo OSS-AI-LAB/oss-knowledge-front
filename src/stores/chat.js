@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { useConversationStore } from './conversation'
 import { useUIStore } from './ui'
+import { sendMessageStreamAPI, uploadFileAPI } from '@/services/api'
 
 export const useChatStore = defineStore('chat', () => {
   const conversationStore = useConversationStore()
@@ -11,6 +12,7 @@ export const useChatStore = defineStore('chat', () => {
   const isStreaming = ref(false)
   const streamingMessage = ref('')
   const uploadedFiles = ref([])
+  const abortController = ref(null)
 
   // 메시지 전송
   const sendMessage = async (content, files = []) => {
@@ -18,59 +20,100 @@ export const useChatStore = defineStore('chat', () => {
 
     const currentConvId = conversationStore.currentConversationId
 
-    // 사용자 메시지 추가
-    const userMessage = {
-      role: 'user',
-      content,
-      files: files.map(f => ({
-        name: f.name,
-        type: f.type,
-        size: f.size
-      }))
-    }
-
-    conversationStore.addMessage(currentConvId, userMessage)
-
-    // AI 응답 시뮬레이션
-    isStreaming.value = true
-    streamingMessage.value = ''
-
-    // Mock 응답 생성
-    const mockResponse = generateMockResponse(content)
-
-    // 스트리밍 효과 시뮬레이션
-    let index = 0
-    const streamInterval = setInterval(() => {
-      if (index < mockResponse.length) {
-        streamingMessage.value += mockResponse[index]
-        index++
-      } else {
-        clearInterval(streamInterval)
-
-        // 완성된 메시지 추가
-        conversationStore.addMessage(currentConvId, {
-          role: 'assistant',
-          content: streamingMessage.value
-        })
-
-        isStreaming.value = false
-        streamingMessage.value = ''
+    try {
+      // 파일 업로드 처리
+      const uploadedFileData = []
+      if (files.length > 0) {
+        for (const file of files) {
+          try {
+            const uploadResult = await uploadFileAPI(file)
+            uploadedFileData.push(uploadResult.data)
+          } catch (error) {
+            uiStore.setError(`파일 업로드 실패: ${file.name}`)
+            console.error('File upload error:', error)
+          }
+        }
       }
-    }, 20) // 20ms 간격으로 문자 추가
 
-    // 업로드된 파일 초기화
-    uploadedFiles.value = []
-  }
+      // 사용자 메시지 추가
+      const userMessage = {
+        role: 'user',
+        content,
+        files: uploadedFileData.length > 0 ? uploadedFileData : undefined
+      }
 
-  // Mock 응답 생성
-  const generateMockResponse = (userInput) => {
-    const responses = [
-      `안녕하세요! "${userInput}"에 대해 도움을 드리겠습니다.\n\n이것은 시뮬레이션된 응답입니다. 실제 구현에서는 백엔드 API와 연동하여 실시간 응답을 받게 됩니다.`,
-      `"${userInput}"는 흥미로운 주제네요!\n\n여기에 대해 더 자세히 설명드리면:\n1. 첫 번째 포인트\n2. 두 번째 포인트\n3. 세 번째 포인트\n\n추가로 궁금한 점이 있으시면 말씀해 주세요.`,
-      `네, 이해했습니다. "${userInput}"에 대한 답변입니다.\n\n\`\`\`javascript\n// 예시 코드\nconst example = () => {\n  console.log('Hello, World!');\n};\n\`\`\`\n\n이 코드는 예시입니다. 실제 상황에 맞게 수정해서 사용하세요.`
-    ]
+      conversationStore.addMessage(currentConvId, userMessage)
 
-    return responses[Math.floor(Math.random() * responses.length)]
+      // AI 응답 요청
+      isStreaming.value = true
+      streamingMessage.value = ''
+
+      // API 요청 페이로드
+      const payload = {
+        conversationId: currentConvId,
+        message: content,
+        files: uploadedFileData,
+        stream: true
+      }
+
+      // 스트리밍 응답 처리
+      abortController.value = await sendMessageStreamAPI(
+        payload,
+        // onChunk - 스트림 데이터 수신
+        (chunk) => {
+          if (typeof chunk === 'string') {
+            // 텍스트 청크인 경우
+            streamingMessage.value += chunk
+          } else if (chunk.content) {
+            // JSON 객체인 경우
+            streamingMessage.value += chunk.content
+          } else if (chunk.delta && chunk.delta.content) {
+            // OpenAI 스타일 델타 응답
+            streamingMessage.value += chunk.delta.content
+          }
+        },
+        // onError - 에러 처리
+        (error) => {
+          console.error('Streaming error:', error)
+          uiStore.setError('응답 생성 중 오류가 발생했습니다.')
+          isStreaming.value = false
+          
+          // 부분 응답이 있으면 저장
+          if (streamingMessage.value.trim()) {
+            conversationStore.addMessage(currentConvId, {
+              role: 'assistant',
+              content: streamingMessage.value
+            })
+          }
+          
+          streamingMessage.value = ''
+          abortController.value = null
+        },
+        // onComplete - 완료 처리
+        () => {
+          if (streamingMessage.value.trim()) {
+            conversationStore.addMessage(currentConvId, {
+              role: 'assistant',
+              content: streamingMessage.value
+            })
+          }
+          
+          isStreaming.value = false
+          streamingMessage.value = ''
+          abortController.value = null
+        }
+      )
+
+      // 업로드된 파일 초기화
+      uploadedFiles.value = []
+
+    } catch (error) {
+      console.error('Send message error:', error)
+      uiStore.setError('메시지 전송에 실패했습니다.')
+      isStreaming.value = false
+      streamingMessage.value = ''
+      abortController.value = null
+    }
   }
 
   // 파일 추가
@@ -89,6 +132,16 @@ export const useChatStore = defineStore('chat', () => {
       return false
     }
 
+    // 중복 파일 체크
+    const isDuplicate = uploadedFiles.value.some(f => 
+      f.name === file.name && f.size === file.size
+    )
+
+    if (isDuplicate) {
+      uiStore.setError('이미 추가된 파일입니다.')
+      return false
+    }
+
     uploadedFiles.value.push(file)
     return true
   }
@@ -100,14 +153,22 @@ export const useChatStore = defineStore('chat', () => {
 
   // 스트리밍 중단
   const stopStreaming = () => {
+    if (abortController.value) {
+      abortController.value()
+      abortController.value = null
+    }
+    
     isStreaming.value = false
-    if (streamingMessage.value) {
+    
+    // 부분 응답이 있으면 저장
+    if (streamingMessage.value.trim()) {
       conversationStore.addMessage(conversationStore.currentConversationId, {
         role: 'assistant',
-        content: streamingMessage.value
+        content: streamingMessage.value + '\n\n*[응답이 중단되었습니다]*'
       })
-      streamingMessage.value = ''
     }
+    
+    streamingMessage.value = ''
   }
 
   return {

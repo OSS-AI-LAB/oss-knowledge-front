@@ -1,11 +1,10 @@
 /**
  * API 서비스 모듈
- * 실제 백엔드와 통신하는 함수들을 정의합니다.
- * 현재는 mock 구현이며, 실제 API 연동 시 수정이 필요합니다.
+ * 백엔드와 통신하는 함수들을 정의합니다.
  */
 
-// API 기본 URL (환경변수로 관리 권장)
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api'
+// API 기본 URL
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
 
 // API 헤더 설정
 const getHeaders = () => ({
@@ -14,38 +13,88 @@ const getHeaders = () => ({
 })
 
 /**
- * 메시지 전송 API
+ * 스트리밍 메시지 전송 API
  * @param {Object} payload - 메시지 정보
- * @returns {Promise} 응답 스트림
+ * @param {Function} onChunk - 스트림 청크 콜백
+ * @param {Function} onError - 에러 콜백
+ * @param {Function} onComplete - 완료 콜백
+ * @returns {Function} abort 함수
  */
-export const sendMessageAPI = async (payload) => {
-  // Mock 구현 - 실제 API 연동 시 아래와 같이 구현
-  /*
-  const response = await fetch(`${API_BASE_URL}/chat/messages`, {
-    method: 'POST',
-    headers: getHeaders(),
-    body: JSON.stringify(payload)
-  })
+export const sendMessageStreamAPI = async (payload, onChunk, onError, onComplete) => {
+  const controller = new AbortController()
+  
+  try {
+    const response = await fetch(`${API_BASE_URL}/chat`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(payload),
+      signal: controller.signal
+    })
 
-  if (!response.ok) {
-    throw new Error(`API Error: ${response.status}`)
+    if (!response.ok) {
+      throw new Error(`API Error: ${response.status} ${response.statusText}`)
+    }
+
+    // 스트리밍 응답 처리
+    const reader = response.body.getReader()
+    const decoder = new TextDecoder()
+
+    const readStream = async () => {
+      try {
+        while (true) {
+          const { done, value } = await reader.read()
+          
+          if (done) {
+            onComplete?.()
+            break
+          }
+
+          // 청크 디코딩
+          const chunk = decoder.decode(value, { stream: true })
+          
+          // SSE 형식 처리 (data: 로 시작하는 라인들)
+          const lines = chunk.split('\n')
+          
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const data = line.slice(6).trim()
+              
+              // [DONE] 신호 체크
+              if (data === '[DONE]') {
+                onComplete?.()
+                return
+              }
+              
+              // JSON 파싱 시도
+              try {
+                const parsed = JSON.parse(data)
+                onChunk?.(parsed)
+              } catch (e) {
+                // JSON이 아닌 경우 텍스트로 처리
+                if (data) {
+                  onChunk?.(data)
+                }
+              }
+            }
+          }
+        }
+      } catch (error) {
+        if (error.name !== 'AbortError') {
+          onError?.(error)
+        }
+      }
+    }
+
+    readStream()
+
+  } catch (error) {
+    if (error.name !== 'AbortError') {
+      onError?.(error)
+    }
   }
 
-  // 스트리밍 응답 처리
-  return response.body.getReader()
-  */
-
-  // Mock 응답
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({
-        data: {
-          message: 'Mock API 응답입니다.',
-          conversationId: payload.conversationId
-        }
-      })
-    }, 1000)
-  })
+  // abort 함수 반환
+  return () => controller.abort()
 }
 
 /**
@@ -53,12 +102,21 @@ export const sendMessageAPI = async (payload) => {
  * @returns {Promise<Array>} 대화 목록
  */
 export const getConversationsAPI = async () => {
-  // Mock 구현
-  return new Promise((resolve) => {
-    resolve({
-      data: []
+  try {
+    const response = await fetch(`${API_BASE_URL}/conversations`, {
+      headers: getHeaders()
     })
-  })
+
+    if (!response.ok) {
+      throw new Error(`API Error: ${response.status}`)
+    }
+
+    return await response.json()
+  } catch (error) {
+    console.error('Failed to fetch conversations:', error)
+    // 에러 시 빈 배열 반환
+    return { data: [] }
+  }
 }
 
 /**
@@ -67,12 +125,21 @@ export const getConversationsAPI = async () => {
  * @returns {Promise}
  */
 export const deleteConversationAPI = async (conversationId) => {
-  // Mock 구현
-  return new Promise((resolve) => {
-    resolve({
-      success: true
+  try {
+    const response = await fetch(`${API_BASE_URL}/conversations/${conversationId}`, {
+      method: 'DELETE',
+      headers: getHeaders()
     })
-  })
+
+    if (!response.ok) {
+      throw new Error(`API Error: ${response.status}`)
+    }
+
+    return await response.json()
+  } catch (error) {
+    console.error('Failed to delete conversation:', error)
+    throw error
+  }
 }
 
 /**
@@ -84,63 +151,19 @@ export const uploadFileAPI = async (file) => {
   const formData = new FormData()
   formData.append('file', file)
 
-  // Mock 구현
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({
-        data: {
-          fileId: Date.now().toString(),
-          fileName: file.name,
-          fileSize: file.size,
-          fileType: file.type,
-          url: URL.createObjectURL(file)
-        }
-      })
-    }, 500)
-  })
-}
+  try {
+    const response = await fetch(`${API_BASE_URL}/upload`, {
+      method: 'POST',
+      body: formData // Content-Type 헤더는 자동 설정됨
+    })
 
-/**
- * WebSocket 연결 (실시간 스트리밍용)
- * @param {string} conversationId - 대화 ID
- * @returns {WebSocket}
- */
-export const createWebSocketConnection = (conversationId) => {
-  // 실제 구현 예시
-  /*
-  const ws = new WebSocket(`${API_BASE_URL.replace('http', 'ws')}/chat/stream/${conversationId}`)
+    if (!response.ok) {
+      throw new Error(`Upload Error: ${response.status}`)
+    }
 
-  ws.onopen = () => {
-    console.log('WebSocket 연결됨')
+    return await response.json()
+  } catch (error) {
+    console.error('Failed to upload file:', error)
+    throw error
   }
-
-  ws.onerror = (error) => {
-    console.error('WebSocket 에러:', error)
-  }
-
-  return ws
-  */
-
-  return null
-}
-
-/**
- * Server-Sent Events 연결 (실시간 스트리밍용)
- * @param {string} conversationId - 대화 ID
- * @returns {EventSource}
- */
-export const createSSEConnection = (conversationId) => {
-  // 실제 구현 예시
-  /*
-  const eventSource = new EventSource(`${API_BASE_URL}/chat/stream/${conversationId}`)
-
-  eventSource.onerror = (error) => {
-    console.error('SSE 에러:', error)
-    eventSource.close()
-  }
-
-  return eventSource
-  */
-
-  return null
 }
