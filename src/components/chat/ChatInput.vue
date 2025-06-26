@@ -24,8 +24,9 @@
               @blur="isFocused = false"
               :placeholder="placeholder"
               :disabled="chatStore.isStreaming"
-              class="w-full px-6 py-4 bg-transparent resize-none focus:outline-none min-h-[60px] max-h-[200px] placeholder-gray-400 text-gray-900"
+              class="w-full px-6 py-4 bg-transparent resize-none focus:outline-none min-h-[60px] max-h-[200px] placeholder-gray-400 text-gray-900 leading-relaxed whitespace-pre-wrap break-words chat-textarea"
               rows="1"
+              style="word-wrap: break-word; overflow-wrap: break-word;"
             ></textarea>
           </div>
 
@@ -167,10 +168,26 @@ const canSend = computed(() => {
 const adjustHeight = () => {
   nextTick(() => {
     if (textareaRef.value) {
+      // 현재 커서 위치 저장
+      const cursorPosition = textareaRef.value.selectionStart
+      
+      // 높이 재설정
       textareaRef.value.style.height = 'auto'
       const scrollHeight = textareaRef.value.scrollHeight
       const maxHeight = 200 // max-h-[200px]와 일치
-      textareaRef.value.style.height = Math.min(scrollHeight, maxHeight) + 'px'
+      const newHeight = Math.min(scrollHeight, maxHeight)
+      
+      textareaRef.value.style.height = newHeight + 'px'
+      
+      // 스크롤이 필요한 경우 스크롤 조정
+      if (scrollHeight > maxHeight) {
+        textareaRef.value.style.overflowY = 'auto'
+      } else {
+        textareaRef.value.style.overflowY = 'hidden'
+      }
+      
+      // 커서 위치 복원
+      textareaRef.value.setSelectionRange(cursorPosition, cursorPosition)
     }
   })
 }
@@ -183,6 +200,11 @@ const handleKeydown = (event) => {
   } else if (event.ctrlKey && event.key === 'u') {
     event.preventDefault()
     fileUploadRef.value?.openFileDialog()
+  } else {
+    // 다른 키 입력 시 텍스트 렌더링 보장
+    nextTick(() => {
+      adjustHeight()
+    })
   }
 }
 
@@ -194,7 +216,13 @@ const sendMessage = () => {
   message.value = ''
 
   nextTick(() => {
-    adjustHeight()
+    if (textareaRef.value) {
+      // 텍스트 영역 완전 초기화
+      textareaRef.value.style.height = 'auto'
+      textareaRef.value.style.overflowY = 'hidden'
+      adjustHeight()
+      textareaRef.value.focus()
+    }
   })
 }
 
@@ -240,6 +268,15 @@ onMounted(() => {
   document.addEventListener('dragenter', handleDragEnter)
   document.addEventListener('dragover', handleDragOver)
   document.addEventListener('dragleave', handleDragLeave)
+  
+  // 텍스트 영역 초기화
+  nextTick(() => {
+    if (textareaRef.value) {
+      textareaRef.value.style.height = 'auto'
+      textareaRef.value.style.overflowY = 'hidden'
+      adjustHeight()
+    }
+  })
 })
 
 onUnmounted(() => {

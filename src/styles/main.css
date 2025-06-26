@@ -60,6 +60,17 @@
   .message-content blockquote {
     @apply border-l-4 border-gray-300 pl-4 italic;
   }
+
+  /* 텍스트 입력 영역 개선 */
+  .chat-textarea {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
+  }
 }
 
 @layer utilities {
