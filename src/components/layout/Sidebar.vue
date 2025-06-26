@@ -136,7 +136,7 @@
             <!-- 사용자 아바타 -->
             <button
                 @click="openUserMenu"
-                class="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center text-white font-medium text-xs hover:ring-2 hover:ring-orange-200 transition-all"
+                class="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center text-white font-medium text-xs hover:ring-2 hover:ring-blue-200 transition-all"
                 title="사용자 메뉴"
             >
                 NJ
@@ -240,7 +240,7 @@
                         v-model="conversationStore.searchQuery"
                         type="text"
                         placeholder="대화 검색..."
-                        class="w-full px-4 py-2.5 pr-10 bg-white rounded-lg border border-gray-200 focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all"
+                        class="w-full px-4 py-2.5 pr-10 bg-white rounded-lg border border-gray-200 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all"
                     />
                     <div class="absolute right-3 top-1/2 -translate-y-1/2">
                         <svg
@@ -294,49 +294,60 @@
                 </div>
 
                 <!-- 대화 목록 -->
-                <div v-else class="p-3 space-y-1">
+                <div v-else class="p-2 space-y-0.5">
                     <div
                         v-for="conv in conversationStore.filteredConversations"
                         :key="conv.id"
                         @click="conversationStore.selectConversation(conv.id)"
                         :class="[
-                            'group relative px-3 py-3 rounded-xl cursor-pointer transition-all duration-200',
+                            'group relative px-2 py-1.5 rounded-lg cursor-pointer transition-all duration-200',
                             conversationStore.currentConversationId === conv.id
                                 ? 'bg-white shadow-sm border border-gray-200'
                                 : 'hover:bg-white hover:shadow-sm',
                         ]"
+                        style="min-height: 44px"
                     >
                         <!-- 대화 내용 -->
-                        <div class="pr-8">
-                            <h3
-                                :class="[
-                                    'text-sm font-medium truncate',
-                                    conversationStore.currentConversationId ===
-                                    conv.id
-                                        ? 'text-gray-900'
-                                        : 'text-gray-700',
-                                ]"
-                            >
-                                {{ conv.title }}
-                            </h3>
-                            <div class="flex items-center justify-between mt-1">
-                                <p class="text-xs text-gray-500">
-                                    {{ getLastMessagePreview(conv) }}
-                                </p>
+                        <div class="pr-2">
+                            <div class="flex items-center justify-between">
+                                <h3
+                                    :class="[
+                                        'text-sm font-medium truncate',
+                                        conversationStore.currentConversationId ===
+                                        conv.id
+                                            ? 'text-gray-900'
+                                            : 'text-gray-700',
+                                    ]"
+                                >
+                                    {{ conv.title }}
+                                </h3>
+                                <span
+                                    class="text-xs text-gray-400 ml-2 whitespace-nowrap"
+                                    >{{ formatDate(conv.updatedAt) }}</span
+                                >
                             </div>
-                            <p class="text-xs text-gray-400 mt-1">
-                                {{ formatDate(conv.updatedAt) }}
+                            <p
+                                class="text-xs text-gray-500 truncate mt-0.5"
+                                style="max-width: 70%"
+                            >
+                                {{ getLastMessagePreview(conv).slice(0, 18) }}
+                                <span
+                                    v-if="
+                                        getLastMessagePreview(conv).length > 18
+                                    "
+                                    >…</span
+                                >
                             </p>
                         </div>
 
                         <!-- 액션 버튼들 -->
                         <div
-                            class="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                            class="absolute bottom-1.5 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
                         >
                             <!-- 편집 버튼 -->
                             <button
                                 @click.stop="startEditing(conv.id)"
-                                class="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+                                class="p-1 hover:bg-gray-100 rounded-lg transition-colors"
                                 title="제목 편집"
                             >
                                 <svg
@@ -357,7 +368,7 @@
                             <!-- 삭제 버튼 -->
                             <button
                                 @click.stop="handleDelete(conv.id)"
-                                class="p-1.5 hover:bg-red-50 hover:text-red-600 rounded-lg transition-colors"
+                                class="p-1 hover:bg-red-50 hover:text-red-600 rounded-lg transition-colors"
                                 title="삭제"
                             >
                                 <svg

@@ -10,7 +10,7 @@
                 :class="[
                     'relative bg-white rounded-3xl border-2 transition-all duration-200 shadow-lg',
                     isFocused
-                        ? 'border-orange-300 shadow-xl'
+                        ? 'border-blue-300 shadow-xl'
                         : 'border-gray-200 hover:border-gray-300',
                 ]"
             >
@@ -69,7 +69,7 @@
                             :class="[
                                 'p-3 rounded-2xl transition-all duration-200 flex items-center justify-center',
                                 canSend
-                                    ? 'bg-orange-500 hover:bg-orange-600 text-white shadow-md hover:shadow-lg'
+                                    ? 'bg-blue-500 hover:bg-blue-600 text-white shadow-md hover:shadow-lg'
                                     : 'bg-gray-100 text-gray-400 cursor-not-allowed',
                             ]"
                             title="전송 (Enter)"
@@ -123,14 +123,14 @@
                     >
                         <div class="flex space-x-1">
                             <div
-                                class="w-2 h-2 bg-orange-500 rounded-full animate-pulse"
+                                class="w-2 h-2 bg-blue-500 rounded-full animate-pulse"
                             ></div>
                             <div
-                                class="w-2 h-2 bg-orange-500 rounded-full animate-pulse"
+                                class="w-2 h-2 bg-blue-500 rounded-full animate-pulse"
                                 style="animation-delay: 0.2s"
                             ></div>
                             <div
-                                class="w-2 h-2 bg-orange-500 rounded-full animate-pulse"
+                                class="w-2 h-2 bg-blue-500 rounded-full animate-pulse"
                                 style="animation-delay: 0.4s"
                             ></div>
                         </div>
@@ -194,13 +194,13 @@
                 class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center backdrop-blur-sm"
             >
                 <div
-                    class="bg-white rounded-3xl p-12 shadow-2xl border-2 border-dashed border-orange-300 max-w-md text-center"
+                    class="bg-white rounded-3xl p-12 shadow-2xl border-2 border-dashed border-blue-300 max-w-md text-center"
                 >
                     <div
-                        class="w-16 h-16 mx-auto mb-6 rounded-full bg-orange-100 flex items-center justify-center"
+                        class="w-16 h-16 mx-auto mb-6 rounded-full bg-blue-100 flex items-center justify-center"
                     >
                         <svg
-                            class="w-8 h-8 text-orange-500"
+                            class="w-8 h-8 text-blue-500"
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
