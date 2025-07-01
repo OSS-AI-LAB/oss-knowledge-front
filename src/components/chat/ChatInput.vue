@@ -8,10 +8,10 @@
             <!-- 입력창 컨테이너 -->
             <div
                 :class="[
-                    'relative bg-white rounded-3xl border-2 transition-all duration-200 shadow-lg',
+                    'relative bg-white rounded-2xl border transition-all duration-200 shadow-sm',
                     isFocused
-                        ? 'border-blue-300 shadow-xl'
-                        : 'border-gray-200 hover:border-gray-300',
+                        ? 'border-blue-300 shadow-md ring-4 ring-blue-50'
+                        : 'border-gray-200 hover:border-gray-300 hover:shadow-md',
                 ]"
             >
                 <!-- 텍스트 입력 영역 -->
@@ -20,7 +20,7 @@
                         <textarea
                             ref="textareaRef"
                             v-model="message"
-                            @input="adjustHeight"
+                            @input="handleInput"
                             @keydown="handleKeydown"
                             @focus="isFocused = true"
                             @blur="isFocused = false"
@@ -43,7 +43,7 @@
                         <button
                             @click="$refs.fileUploadRef.openFileDialog()"
                             :disabled="chatStore.isStreaming"
-                            class="p-2.5 text-gray-400 hover:text-gray-600 disabled:opacity-50 transition-colors rounded-lg hover:bg-gray-100"
+                            class="p-2.5 text-gray-400 hover:text-gray-600 disabled:opacity-50 transition-all duration-200 rounded-lg hover:bg-gray-100"
                             title="파일 첨부 (Ctrl+U)"
                         >
                             <svg
@@ -67,9 +67,9 @@
                             @click="sendMessage"
                             :disabled="!canSend"
                             :class="[
-                                'p-3 rounded-2xl transition-all duration-200 flex items-center justify-center',
+                                'p-3 rounded-xl transition-all duration-200 flex items-center justify-center',
                                 canSend
-                                    ? 'bg-blue-500 hover:bg-blue-600 text-white shadow-md hover:shadow-lg'
+                                    ? 'bg-blue-500 hover:bg-blue-600 text-white shadow-sm hover:shadow-md'
                                     : 'bg-gray-100 text-gray-400 cursor-not-allowed',
                             ]"
                             title="전송 (Enter)"
@@ -93,7 +93,7 @@
                         <button
                             v-else
                             @click="stopGeneration"
-                            class="p-3 bg-red-500 hover:bg-red-600 text-white rounded-2xl transition-colors shadow-md hover:shadow-lg flex items-center justify-center"
+                            class="p-3 bg-red-500 hover:bg-red-600 text-white rounded-xl transition-all duration-200 shadow-sm hover:shadow-md flex items-center justify-center"
                             title="생성 중지"
                         >
                             <svg
@@ -139,13 +139,13 @@
                     <span v-else class="flex items-center gap-2">
                         <span>
                             <kbd
-                                class="px-2 py-1 bg-white rounded text-xs border border-gray-200"
+                                class="px-2 py-1 bg-white rounded text-xs border border-gray-200 shadow-sm"
                                 >Enter</kbd
                             >로 전송
                         </span>
                         <span>
                             <kbd
-                                class="px-2 py-1 bg-white rounded text-xs border border-gray-200"
+                                class="px-2 py-1 bg-white rounded text-xs border border-gray-200 shadow-sm"
                                 >Shift + Enter</kbd
                             >로 줄바꿈
                         </span>
@@ -194,7 +194,7 @@
                 class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center backdrop-blur-sm"
             >
                 <div
-                    class="bg-white rounded-3xl p-12 shadow-2xl border-2 border-dashed border-blue-300 max-w-md text-center"
+                    class="bg-white rounded-2xl p-12 shadow-2xl border-2 border-dashed border-blue-300 max-w-md text-center"
                 >
                     <div
                         class="w-16 h-16 mx-auto mb-6 rounded-full bg-blue-100 flex items-center justify-center"
@@ -213,12 +213,11 @@
                             />
                         </svg>
                     </div>
-                    <h3 class="text-xl font-semibold text-gray-900 mb-2">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-2">
                         파일을 여기에 놓으세요
                     </h3>
                     <p class="text-gray-500">
-                        지원 형식: TXT, PNG, JPG, PDF<br />
-                        <span class="text-sm">최대 10MB</span>
+                        파일을 드래그하여 업로드하세요
                     </p>
                 </div>
             </div>
@@ -256,30 +255,28 @@ const canSend = computed(() => {
 
 // 텍스트 영역 높이 자동 조절
 const adjustHeight = () => {
-    nextTick(() => {
-        if (textareaRef.value) {
-            // 현재 커서 위치 저장
-            const cursorPosition = textareaRef.value.selectionStart;
+    if (textareaRef.value) {
+        // 현재 커서 위치 저장
+        const cursorPosition = textareaRef.value.selectionStart;
 
-            // 높이 재설정
-            textareaRef.value.style.height = "auto";
-            const scrollHeight = textareaRef.value.scrollHeight;
-            const maxHeight = 200; // max-h-[200px]와 일치
-            const newHeight = Math.min(scrollHeight, maxHeight);
+        // 높이 재설정
+        textareaRef.value.style.height = "auto";
+        const scrollHeight = textareaRef.value.scrollHeight;
+        const maxHeight = 200; // max-h-[200px]와 일치
+        const newHeight = Math.min(scrollHeight, maxHeight);
 
-            textareaRef.value.style.height = newHeight + "px";
+        textareaRef.value.style.height = newHeight + "px";
 
-            // 스크롤이 필요한 경우 스크롤 조정
-            if (scrollHeight > maxHeight) {
-                textareaRef.value.style.overflowY = "auto";
-            } else {
-                textareaRef.value.style.overflowY = "hidden";
-            }
-
-            // 커서 위치 복원
-            textareaRef.value.setSelectionRange(cursorPosition, cursorPosition);
+        // 스크롤이 필요한 경우 스크롤 조정
+        if (scrollHeight > maxHeight) {
+            textareaRef.value.style.overflowY = "auto";
+        } else {
+            textareaRef.value.style.overflowY = "hidden";
         }
-    });
+
+        // 커서 위치 복원
+        textareaRef.value.setSelectionRange(cursorPosition, cursorPosition);
+    }
 };
 
 // 키보드 이벤트 처리
@@ -297,12 +294,14 @@ const handleKeydown = (event) => {
     } else if (event.ctrlKey && event.key === "u") {
         event.preventDefault();
         fileUploadRef.value?.openFileDialog();
-    } else {
-        // 다른 키 입력 시 텍스트 렌더링 보장
-        nextTick(() => {
-            adjustHeight();
-        });
     }
+    // 다른 키 입력들은 기본 동작을 방해하지 않음
+};
+
+// 텍스트 변경 감지 (input 이벤트에서 처리)
+const handleInput = () => {
+    // 텍스트 변경 시 높이 조정
+    adjustHeight();
 };
 
 // 메시지 전송

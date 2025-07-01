@@ -1,12 +1,12 @@
 <template>
-    <div class="px-6 py-6 last:pb-4 group">
+    <div class="px-6 py-8 last:pb-6 group border-b border-gray-100 last:border-b-0">
         <div class="max-w-4xl mx-auto">
             <div class="flex gap-4">
                 <!-- 아바타 -->
                 <div class="flex-shrink-0 mt-1">
                     <div
                         v-if="message.role === 'assistant'"
-                        class="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center"
+                        class="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-sm"
                     >
                         <svg
                             class="w-4 h-4 text-white"
@@ -24,7 +24,7 @@
                     </div>
                     <div
                         v-else
-                        class="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center text-white font-medium text-sm"
+                        class="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center text-white font-medium text-sm shadow-sm"
                     >
                         NJ
                     </div>
@@ -33,7 +33,7 @@
                 <!-- 메시지 내용 -->
                 <div class="flex-1 min-w-0">
                     <!-- 역할 표시 -->
-                    <div class="mb-2">
+                    <div class="mb-3">
                         <span class="text-sm font-semibold text-gray-900">
                             {{ message.role === "assistant" ? "Claude" : "NJ" }}
                         </span>
@@ -48,7 +48,7 @@
                             <div
                                 v-for="(file, index) in message.files"
                                 :key="index"
-                                class="inline-flex items-center gap-2 px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm"
+                                class="inline-flex items-center gap-2 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm hover:bg-gray-100 transition-colors"
                             >
                                 <span class="text-lg">{{
                                     getFileIcon(file.type)
@@ -67,18 +67,18 @@
 
                     <!-- 메시지 텍스트 -->
                     <div
-                        class="message-content prose prose-lg max-w-none"
+                        class="message-content prose prose-lg max-w-none text-gray-800 leading-relaxed"
                         v-html="parsedContent"
                     ></div>
 
                     <!-- 메시지 액션 버튼들 (Assistant 메시지에만 표시) -->
                     <div
                         v-if="message.role === 'assistant'"
-                        class="flex items-center gap-1 mt-4 pt-3 opacity-0 group-hover:opacity-100 transition-opacity"
+                        class="flex items-center gap-1 mt-4 pt-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
                     >
                         <button
                             @click="copyMessage"
-                            class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                            class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-all duration-200"
                             title="복사"
                         >
                             <svg
@@ -94,11 +94,12 @@
                                     d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
                                 />
                             </svg>
+                            복사
                         </button>
 
                         <button
                             @click="regenerateResponse"
-                            class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                            class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-all duration-200"
                             title="다시 생성"
                         >
                             <svg
@@ -114,11 +115,12 @@
                                     d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
                                 />
                             </svg>
+                            다시 생성
                         </button>
 
                         <button
                             @click="likeMessage"
-                            class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                            class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-all duration-200"
                             title="좋아요"
                         >
                             <svg
@@ -134,11 +136,12 @@
                                     d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5"
                                 />
                             </svg>
+                            좋아요
                         </button>
 
                         <button
                             @click="dislikeMessage"
-                            class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                            class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-all duration-200"
                             title="싫어요"
                         >
                             <svg
@@ -155,6 +158,7 @@
                                     d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5"
                                 />
                             </svg>
+                            싫어요
                         </button>
                     </div>
 
