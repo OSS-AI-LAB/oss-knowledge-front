@@ -10,9 +10,9 @@
         <Header />
       </div>
 
-      <!-- 채팅 영역 - 남은 공간 모두 사용 -->
+      <!-- 메인 컨텐츠 영역 - 남은 공간 모두 사용 -->
       <main class="flex-1 min-h-0 overflow-hidden">
-        <ChatContainer />
+        <router-view />
       </main>
     </div>
 

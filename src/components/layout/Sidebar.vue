@@ -30,6 +30,28 @@
                     </svg>
                 </button>
 
+                <!-- 채팅 페이지 버튼 -->
+                <router-link
+                    to="/"
+                    class="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-all duration-200"
+                    :class="{ 'bg-blue-50 text-blue-600': $route.path === '/' }"
+                    title="채팅"
+                >
+                    <svg
+                        class="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                        />
+                    </svg>
+                </router-link>
+
                 <!-- 새 채팅 버튼 -->
                 <button
                     @click="conversationStore.createNewConversation()"
@@ -71,6 +93,28 @@
                         />
                     </svg>
                 </button>
+
+                <!-- 데이터 업로드 버튼 -->
+                <router-link
+                    to="/upload"
+                    class="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-all duration-200"
+                    :class="{ 'bg-blue-50 text-blue-600': $route.path === '/upload' }"
+                    title="데이터 업로드"
+                >
+                    <svg
+                        class="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                        />
+                    </svg>
+                </router-link>
 
                 <!-- 대화 아이콘들 -->
                 <div class="border-t border-gray-200 pt-2 w-full">
@@ -178,7 +222,7 @@
         <div v-else class="flex flex-col h-full">
             <!-- 상단 헤더 -->
             <div class="p-4 border-b border-gray-200">
-                <div class="flex items-center justify-between">
+                <div class="flex items-center justify-between mb-4">
                     <!-- 햄버거 메뉴 (항상 표시) -->
                     <button
                         @click="toggleCollapse"
@@ -222,6 +266,31 @@
                         </svg>
                         새 채팅
                     </button>
+                </div>
+
+                <!-- 네비게이션 버튼들 -->
+                <div class="flex gap-2">
+                    <router-link
+                        to="/"
+                        class="flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200"
+                        :class="$route.path === '/' ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'"
+                    >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                        </svg>
+                        채팅
+                    </router-link>
+                    
+                    <router-link
+                        to="/upload"
+                        class="flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200"
+                        :class="$route.path === '/upload' ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'"
+                    >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                        </svg>
+                        데이터 업로드
+                    </router-link>
                 </div>
             </div>
 
