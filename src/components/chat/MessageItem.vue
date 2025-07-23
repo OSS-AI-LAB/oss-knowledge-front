@@ -1,12 +1,13 @@
 <template>
-    <div class="px-6 py-8 last:pb-6 group border-b border-gray-100 last:border-b-0">
+    <div class="px-6 py-8 last:pb-6 group last:border-b-0" style="border-bottom: 1px solid var(--color-border-light)">
         <div class="max-w-4xl mx-auto">
             <div class="flex gap-4">
                 <!-- 아바타 -->
                 <div class="flex-shrink-0 mt-1">
                     <div
                         v-if="message.role === 'assistant'"
-                        class="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-sm"
+                        class="w-8 h-8 rounded-full flex items-center justify-center shadow-sm"
+                        style="background: linear-gradient(135deg, var(--color-primary-500), var(--color-primary-600))"
                     >
                         <svg
                             class="w-4 h-4 text-white"
@@ -62,6 +63,24 @@
                                     }}</span>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+
+                    <!-- 멘션된 부서 표시 -->
+                    <div
+                        v-if="message.mentionedDepartments && message.mentionedDepartments.length > 0"
+                        class="mb-4"
+                    >
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="text-sm font-medium text-gray-700">멘션된 부서:</span>
+                        </div>
+                        <div class="flex flex-wrap gap-2">
+                            <MentionTag
+                                v-for="dept in message.mentionedDepartments"
+                                :key="dept.id"
+                                :department="dept"
+                                :removable="false"
+                            />
                         </div>
                     </div>
 
@@ -177,6 +196,7 @@ import { computed } from "vue";
 import { parseMarkdown } from "@/utils/markdown";
 import { formatFileSize, getFileIcon } from "@/utils/fileHandler";
 import { useUIStore } from "@/stores/ui";
+import MentionTag from "./MentionTag.vue";
 
 const props = defineProps({
     message: {

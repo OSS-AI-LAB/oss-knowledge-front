@@ -4,19 +4,45 @@
         <FileUpload ref="fileUploadRef" />
 
         <!-- 메인 입력 영역 -->
-        <div class="relative">
+        <div class="relative mb-6">
+            <!-- 멘션 드롭다운 -->
+            <MentionDropdown
+                :show="showMentionDropdown"
+                :search-query="mentionSearchQuery"
+                @select="handleMentionSelect"
+                @close="closeMentionDropdown"
+                @update:search-query="mentionSearchQuery = $event"
+            />
             <!-- 입력창 컨테이너 -->
             <div
                 :class="[
-                    'relative bg-white rounded-2xl border transition-all duration-200 shadow-sm',
+                    'relative rounded-2xl border transition-all duration-200',
                     isFocused
-                        ? 'border-blue-300 shadow-md ring-4 ring-blue-50'
-                        : 'border-gray-200 hover:border-gray-300 hover:shadow-md',
+                        ? 'shadow-lg ring-4'
+                        : 'shadow-md hover:shadow-lg',
+                ]"
+                :style="[
+                    'background-color: var(--color-bg-primary)',
+                    isFocused
+                        ? 'border-color: var(--color-primary-300); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); box-shadow: 0 0 0 4px var(--color-primary-50)'
+                        : 'border-color: var(--color-border-light); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                    !isFocused && 'border-color: var(--color-border-light)'
                 ]"
             >
                 <!-- 텍스트 입력 영역 -->
-                <div class="flex items-end">
-                    <div class="flex-1">
+                <div class="flex items-end max-w-xl lg:max-w-2xl xl:max-w-3xl mx-auto w-full">
+                    <div class="flex-1 relative">
+                        <!-- 멘션 태그들 -->
+                        <div v-if="mentionedDepartments.length > 0" class="flex flex-wrap gap-2 p-4 pb-2">
+                            <MentionTag
+                                v-for="dept in mentionedDepartments"
+                                :key="dept.id"
+                                :department="dept"
+                                :removable="true"
+                                @remove="removeMention"
+                            />
+                        </div>
+                        
                         <textarea
                             ref="textareaRef"
                             v-model="message"
@@ -149,6 +175,12 @@
                                 >Shift + Enter</kbd
                             >로 줄바꿈
                         </span>
+                        <span>
+                            <kbd
+                                class="px-2 py-1 bg-white rounded text-xs border border-gray-200 shadow-sm"
+                                >@</kbd
+                            >로 부서 멘션
+                        </span>
                     </span>
                 </div>
 
@@ -229,6 +261,8 @@
 import { ref, computed, nextTick, onMounted, onUnmounted } from "vue";
 import { useChatStore } from "@/stores/chat";
 import FileUpload from "./FileUpload.vue";
+import MentionDropdown from "./MentionDropdown.vue";
+import MentionTag from "./MentionTag.vue";
 
 const chatStore = useChatStore();
 
@@ -239,6 +273,12 @@ const isDragging = ref(false);
 const isFocused = ref(false);
 const isComposing = ref(false);
 const shouldSendOnCompositionEnd = ref(false);
+
+// 멘션 관련 상태
+const showMentionDropdown = ref(false);
+const mentionSearchQuery = ref("");
+const mentionedDepartments = ref([]);
+const mentionStartIndex = ref(-1);
 
 const placeholder = computed(() => {
     return chatStore.isStreaming
@@ -302,14 +342,25 @@ const handleKeydown = (event) => {
 const handleInput = () => {
     // 텍스트 변경 시 높이 조정
     adjustHeight();
+    
+    // @ 멘션 감지
+    checkForMention();
 };
 
 // 메시지 전송
 const sendMessage = () => {
     if (!canSend.value) return;
 
-    chatStore.sendMessage(message.value, chatStore.uploadedFiles);
+    // 멘션된 부서 정보와 함께 메시지 전송
+    const messageData = {
+        content: message.value,
+        mentionedDepartments: mentionedDepartments.value,
+        files: chatStore.uploadedFiles
+    };
+
+    chatStore.sendMessage(messageData);
     message.value = "";
+    mentionedDepartments.value = [];
 
     // Reset textarea immediately without nextTick
     if (textareaRef.value) {
@@ -322,6 +373,66 @@ const sendMessage = () => {
 // 생성 중지
 const stopGeneration = () => {
     chatStore.stopStreaming();
+};
+
+// @ 멘션 감지
+const checkForMention = () => {
+    const cursorPosition = textareaRef.value?.selectionStart || 0;
+    const textBeforeCursor = message.value.substring(0, cursorPosition);
+    
+    // @ 패턴 찾기
+    const mentionMatch = textBeforeCursor.match(/@([^@\s]*)$/);
+    
+    if (mentionMatch) {
+        mentionStartIndex.value = mentionMatch.index;
+        mentionSearchQuery.value = mentionMatch[1];
+        showMentionDropdown.value = true;
+    } else {
+        closeMentionDropdown();
+    }
+};
+
+// 멘션 드롭다운 닫기
+const closeMentionDropdown = () => {
+    showMentionDropdown.value = false;
+    mentionSearchQuery.value = "";
+    mentionStartIndex.value = -1;
+};
+
+// 멘션 선택 처리
+const handleMentionSelect = (department) => {
+    if (mentionStartIndex.value >= 0) {
+        // @ 부서명으로 텍스트 교체
+        const beforeMention = message.value.substring(0, mentionStartIndex.value);
+        const afterMention = message.value.substring(mentionStartIndex.value + mentionSearchQuery.value.length + 1);
+        message.value = beforeMention + "@" + department.name + afterMention;
+        
+        // 멘션된 부서 목록에 추가 (중복 방지)
+        if (!mentionedDepartments.value.find(d => d.id === department.id)) {
+            mentionedDepartments.value.push(department);
+        }
+        
+        // 커서 위치 조정
+        nextTick(() => {
+            const newCursorPosition = mentionStartIndex.value + department.name.length + 1;
+            textareaRef.value?.setSelectionRange(newCursorPosition, newCursorPosition);
+            textareaRef.value?.focus();
+        });
+    }
+    
+    closeMentionDropdown();
+};
+
+// 멘션 제거
+const removeMention = (department) => {
+    const index = mentionedDepartments.value.findIndex(d => d.id === department.id);
+    if (index > -1) {
+        mentionedDepartments.value.splice(index, 1);
+    }
+    
+    // 텍스트에서도 @부서명 제거
+    const mentionPattern = new RegExp(`@${department.name}\\b`, 'g');
+    message.value = message.value.replace(mentionPattern, '');
 };
 
 // 드래그 앤 드롭 처리
@@ -393,3 +504,27 @@ onUnmounted(() => {
     document.removeEventListener("dragleave", handleDragLeave);
 });
 </script>
+
+<style scoped>
+/* 입력창 최대 너비 제한 및 가운데 정렬 */
+.relative.mb-6 {
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* 반응형 최대 너비 */
+@media (max-width: 1024px) {
+    .relative.mb-6 {
+        max-width: 700px;
+    }
+}
+
+@media (max-width: 768px) {
+    .relative.mb-6 {
+        max-width: 100%;
+        margin-left: 1rem;
+        margin-right: 1rem;
+    }
+}
+</style>

@@ -1,15 +1,13 @@
 <template>
-  <div class="flex flex-col h-full bg-gray-50 min-h-0">
+  <div class="flex flex-col h-full min-h-0 chat-container" style="background-color: var(--color-bg-secondary)">
     <!-- 메시지 리스트 - 고정 높이 보장 -->
     <div class="flex-1 min-h-0 overflow-hidden">
       <MessageList />
     </div>
 
-    <!-- 입력 영역 - 고정 높이 -->
-    <div class="flex-shrink-0 bg-gray-50 pb-6">
-      <div class="max-w-4xl mx-auto px-6">
-        <ChatInput />
-      </div>
+    <!-- 입력 영역 -->
+    <div class="w-full px-5" style="min-width: 600px;">
+      <ChatInput />
     </div>
   </div>
 </template>

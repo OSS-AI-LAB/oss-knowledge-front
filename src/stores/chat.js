@@ -51,8 +51,9 @@ export const useChatStore = defineStore("chat", () => {
     };
 
     // 메시지 전송
-    const sendMessage = async (content, files = []) => {
-        console.log("Sending message:", content, files);
+    const sendMessage = async (messageData) => {
+        const { content, mentionedDepartments = [], files = [] } = messageData;
+        console.log("Sending message:", content, mentionedDepartments, files);
         if (!content.trim() && files.length === 0) return;
 
         const currentConvId = conversationStore.currentConversationId;
@@ -78,6 +79,7 @@ export const useChatStore = defineStore("chat", () => {
                 content,
                 files:
                     uploadedFileData.length > 0 ? uploadedFileData : undefined,
+                mentionedDepartments: mentionedDepartments.length > 0 ? mentionedDepartments : undefined,
             };
 
             conversationStore.addMessage(currentConvId, userMessage);
@@ -94,6 +96,7 @@ export const useChatStore = defineStore("chat", () => {
                 conversationId: currentConvId,
                 message: content,
                 files: uploadedFileData,
+                mentionedDepartments: mentionedDepartments,
                 stream: true,
             };
 

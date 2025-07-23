@@ -2,7 +2,7 @@
 
 /* ===== COLOR SYSTEM ===== */
 :root {
-    /* Primary Colors - Vibrant Blue-Purple Gradient */
+    /* Primary Colors - Vibrant Blue-Purple Gradient (Knowledge Mode) */
     --color-primary-50: #f0f9ff;
     --color-primary-100: #e0f2fe;
     --color-primary-200: #bae6fd;
@@ -14,7 +14,7 @@
     --color-primary-800: #075985;
     --color-primary-900: #0c4a6e;
 
-    /* Secondary Colors - Warm Accent */
+    /* Secondary Colors - Warm Accent (Knowledge Mode) */
     --color-secondary-50: #fef7ee;
     --color-secondary-100: #fdedd3;
     --color-secondary-200: #fed7aa;
@@ -25,6 +25,29 @@
     --color-secondary-700: #c2410c;
     --color-secondary-800: #9a3412;
     --color-secondary-900: #7c2d12;
+
+    /* Agent Mode Colors - Modern Teal-Blue Theme */
+    --color-agent-primary-50: #f0fdfa;
+    --color-agent-primary-100: #ccfbf1;
+    --color-agent-primary-200: #99f6e4;
+    --color-agent-primary-300: #5eead4;
+    --color-agent-primary-400: #2dd4bf;
+    --color-agent-primary-500: #14b8a6;
+    --color-agent-primary-600: #0d9488;
+    --color-agent-primary-700: #0f766e;
+    --color-agent-primary-800: #115e59;
+    --color-agent-primary-900: #134e4a;
+
+    --color-agent-secondary-50: #f8fafc;
+    --color-agent-secondary-100: #f1f5f9;
+    --color-agent-secondary-200: #e2e8f0;
+    --color-agent-secondary-300: #cbd5e1;
+    --color-agent-secondary-400: #94a3b8;
+    --color-agent-secondary-500: #64748b;
+    --color-agent-secondary-600: #475569;
+    --color-agent-secondary-700: #334155;
+    --color-agent-secondary-800: #1e293b;
+    --color-agent-secondary-900: #0f172a;
 
     /* Neutral Colors - Warmer Gray Palette */
     --color-gray-50: #fefefe;
@@ -60,6 +83,107 @@
     --color-border-light: #e2e8f0;
     --color-border-medium: #cbd5e1;
     --color-border-focus: #0ea5e9;
+}
+
+/* Agent Mode Theme Override */
+.agent-mode {
+    /* Primary Colors - Teal Theme */
+    --color-primary-50: var(--color-agent-primary-50);
+    --color-primary-100: var(--color-agent-primary-100);
+    --color-primary-200: var(--color-agent-primary-200);
+    --color-primary-300: var(--color-agent-primary-300);
+    --color-primary-400: var(--color-agent-primary-400);
+    --color-primary-500: var(--color-agent-primary-500);
+    --color-primary-600: var(--color-agent-primary-600);
+    --color-primary-700: var(--color-agent-primary-700);
+    --color-primary-800: var(--color-agent-primary-800);
+    --color-primary-900: var(--color-agent-primary-900);
+
+    /* Secondary Colors - Modern Gray */
+    --color-secondary-50: var(--color-agent-secondary-50);
+    --color-secondary-100: var(--color-agent-secondary-100);
+    --color-secondary-200: var(--color-agent-secondary-200);
+    --color-secondary-300: var(--color-agent-secondary-300);
+    --color-secondary-400: var(--color-agent-secondary-400);
+    --color-secondary-500: var(--color-agent-secondary-500);
+    --color-secondary-600: var(--color-agent-secondary-600);
+    --color-secondary-700: var(--color-agent-secondary-700);
+    --color-secondary-800: var(--color-agent-secondary-800);
+    --color-secondary-900: var(--color-agent-secondary-900);
+
+    /* Background Colors - Subtle Teal Tint */
+    --color-bg-primary: #ffffff;
+    --color-bg-secondary: #fafdfc;
+    --color-bg-tertiary: #f0fdfa;
+    --color-bg-elevated: #ffffff;
+
+    /* Border Colors */
+    --color-border-focus: var(--color-agent-primary-500);
+}
+
+/* Agent mode specific overrides for Tailwind classes */
+.agent-mode .bg-white {
+    background-color: var(--color-bg-primary) !important;
+}
+
+.agent-mode .border-gray-200 {
+    border-color: var(--color-border-light) !important;
+}
+
+.agent-mode .border-gray-100 {
+    border-color: var(--color-border-light) !important;
+}
+
+.agent-mode .text-gray-600 {
+    color: var(--color-gray-600) !important;
+}
+
+.agent-mode .text-gray-700 {
+    color: var(--color-gray-700) !important;
+}
+
+.agent-mode .text-gray-900 {
+    color: var(--color-gray-900) !important;
+}
+
+.agent-mode .hover\:bg-gray-100:hover {
+    background-color: var(--color-gray-100) !important;
+}
+
+.agent-mode .hover\:bg-gray-50:hover {
+    background-color: var(--color-gray-50) !important;
+}
+
+/* Agent mode specific component styles */
+.agent-mode header {
+    background-color: var(--color-bg-primary) !important;
+    border-bottom-color: var(--color-primary-200) !important;
+}
+
+.agent-mode .sidebar {
+    background-color: var(--color-bg-primary) !important;
+    border-right-color: var(--color-primary-200) !important;
+}
+
+.agent-mode .chat-container {
+    background-color: var(--color-bg-secondary) !important;
+}
+
+/* Subtle teal accents for interactive elements */
+.agent-mode .hover\:bg-gray-100:hover {
+    background-color: var(--color-primary-50) !important;
+}
+
+.agent-mode .hover\:bg-gray-50:hover {
+    background-color: var(--color-primary-50) !important;
+}
+
+.agent-mode .bg-primary-50 {
+    background-color: var(--color-primary-50) !important;
+}
+
+.agent-mode .text-primary-600 {
+    color: var(--color-primary-600) !important;
 }
 
 /* ===== TYPOGRAPHY SYSTEM ===== */
