@@ -2,19 +2,57 @@
   <div class="h-full flex flex-col" style="background-color: var(--color-bg-secondary)">
     <!-- 헤더 -->
     <div class="bg-white border-b px-6 py-4" style="border-color: var(--color-border-light)">
-      <div class="max-w-4xl mx-auto">
+      <div class="max-w-6xl mx-auto">
         <h1 class="text-2xl font-bold" style="color: var(--color-gray-900)">데이터 업로드</h1>
-        <p class="mt-1" style="color: var(--color-gray-600)">RAG 시스템에 사용할 문서와 데이터를 업로드하세요</p>
+        <p class="mt-1" style="color: var(--color-gray-600)">OSS Knowledge 및 개별 RAG 시스템에 사용할 문서를 업로드하세요</p>
       </div>
     </div>
 
     <!-- 메인 컨텐츠 -->
     <div class="flex-1 overflow-y-auto">
-      <div class="max-w-4xl mx-auto p-6 space-y-8">
+      <div class="max-w-6xl mx-auto p-6 space-y-6">
         <!-- 업로드 영역 -->
         <div class="bg-white rounded-xl shadow-sm border" style="border-color: var(--color-border-light)">
           <div class="p-6">
             <h2 class="text-lg font-semibold mb-4" style="color: var(--color-gray-900)">파일 업로드</h2>
+            
+            <!-- 부서 선택 -->
+            <div class="mb-6">
+              <label class="block text-sm font-medium mb-3" style="color: var(--color-gray-900)">
+                업로드 대상 선택
+              </label>
+              <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
+                <button
+                  @click="selectedDepartment = null"
+                  :class="[
+                    'p-3 rounded-lg border-2 transition-all duration-200 text-center',
+                    selectedDepartment === null 
+                      ? 'border-primary-500 bg-primary-50 text-primary-700 shadow-sm' 
+                      : 'border-gray-200 hover:border-gray-300 text-gray-700 hover:bg-gray-50'
+                  ]"
+                >
+                  <div class="text-2xl mb-1">🏢</div>
+                  <div class="text-xs font-medium">OSS Knowledge</div>
+                </button>
+                <button
+                  v-for="dept in departments"
+                  :key="dept.id"
+                  @click="selectedDepartment = dept.id"
+                  :class="[
+                    'p-3 rounded-lg border-2 transition-all duration-200 text-center',
+                    selectedDepartment === dept.id 
+                      ? 'border-primary-500 bg-primary-50 text-primary-700 shadow-sm' 
+                      : 'border-gray-200 hover:border-gray-300 text-gray-700 hover:bg-gray-50'
+                  ]"
+                >
+                  <div class="text-2xl mb-1">{{ dept.icon }}</div>
+                  <div class="text-xs font-medium">{{ dept.name }}</div>
+                </button>
+              </div>
+              <p v-if="selectedDepartment" class="mt-3 text-sm p-3 rounded-lg" style="background-color: var(--color-primary-50); color: var(--color-primary-700)">
+                <strong>{{ getSelectedDepartmentName() }}</strong> - {{ getSelectedDepartmentDescription() }}
+              </p>
+            </div>
             
             <!-- 드래그 앤 드롭 영역 -->
             <div
@@ -35,7 +73,9 @@
                   </svg>
                 </div>
                 <div>
-                  <p class="text-lg font-medium" style="color: var(--color-gray-900)">파일을 드래그하여 업로드하거나</p>
+                  <p class="text-lg font-medium" style="color: var(--color-gray-900)">
+                    {{ selectedDepartment ? `${getSelectedDepartmentName()}에 파일을 업로드하거나` : '파일을 드래그하여 업로드하거나' }}
+                  </p>
                   <button
                     @click="triggerFileInput"
                     class="btn btn-primary mt-3"
@@ -59,7 +99,12 @@
 
             <!-- 선택된 파일 목록 -->
             <div v-if="selectedFiles.length > 0" class="mt-6">
-              <h3 class="text-sm font-medium mb-3" style="color: var(--color-gray-900)">선택된 파일 ({{ selectedFiles.length }}개)</h3>
+              <h3 class="text-sm font-medium mb-3" style="color: var(--color-gray-900)">
+                선택된 파일 ({{ selectedFiles.length }}개)
+                <span v-if="selectedDepartment" class="text-xs font-normal" style="color: var(--color-gray-500)">
+                  → {{ getSelectedDepartmentName() }}에 업로드
+                </span>
+              </h3>
               <div class="space-y-2">
                 <div
                   v-for="(file, index) in selectedFiles"
@@ -107,37 +152,116 @@
                   </svg>
                   업로드 중...
                 </span>
-                <span v-else>업로드 시작</span>
+                <span v-else>
+                  {{ selectedDepartment ? `${getSelectedDepartmentName()}에 업로드` : '업로드 시작' }}
+                </span>
               </button>
             </div>
           </div>
         </div>
 
-        <!-- 업로드된 문서 목록 -->
+        <!-- 문서 관리 섹션 -->
         <div class="bg-white rounded-xl shadow-sm border" style="border-color: var(--color-border-light)">
           <div class="p-6">
-            <div class="flex items-center justify-between mb-4">
-              <h2 class="text-lg font-semibold" style="color: var(--color-gray-900)">업로드된 문서</h2>
-              <button
-                @click="refreshDocuments"
-                class="p-2 transition-colors rounded-lg hover:bg-gray-50"
-                style="color: var(--color-gray-400)"
-                onmouseover="this.style.color='var(--color-gray-600)'"
-                onmouseout="this.style.color='var(--color-gray-400)'"
-                title="새로고침"
-              >
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+            <!-- 헤더 -->
+            <div class="flex items-center justify-between mb-6">
+              <div>
+                <h2 class="text-lg font-semibold" style="color: var(--color-gray-900)">업로드된 문서</h2>
+                <p class="text-sm mt-1" style="color: var(--color-gray-500)">
+                  총 {{ getAllDocumentsCount() }}개 문서
+                </p>
+              </div>
+              <div class="flex items-center space-x-2">
+                <!-- Azure 동기화 버튼 -->
+                <button
+                  @click="syncAzureFileShare"
+                  :disabled="isSyncing"
+                  class="p-2 transition-colors rounded-lg hover:bg-blue-50 disabled:opacity-50"
+                  style="color: var(--color-gray-400)"
+                  onmouseover="this.style.color='var(--color-primary-500)'"
+                  onmouseout="this.style.color='var(--color-gray-400)'"
+                  title="Azure File Share 동기화"
+                >
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                  </svg>
+                </button>
+                <button
+                  @click="refreshDocuments"
+                  class="p-2 transition-colors rounded-lg hover:bg-gray-50"
+                  style="color: var(--color-gray-400)"
+                  onmouseover="this.style.color='var(--color-gray-600)'"
+                  onmouseout="this.style.color='var(--color-gray-400)'"
+                  title="새로고침"
+                >
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <!-- Azure 연결 상태 -->
+            <div v-if="azureConnectionStatus" class="mb-4 p-3 rounded-lg" :style="azureConnectionStatus.connected ? 'background-color: var(--color-success-50); color: var(--color-success-700)' : 'background-color: var(--color-error-50); color: var(--color-error-700)'">
+              <div class="flex items-center space-x-2">
+                <svg v-if="azureConnectionStatus.connected" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>
+                <svg v-else class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <span class="text-sm font-medium">
+                  Azure File Share: {{ azureConnectionStatus.connected ? '연결됨' : '연결 안됨' }}
+                </span>
+              </div>
+            </div>
+
+            <!-- 탭 네비게이션 -->
+            <div class="flex flex-wrap gap-2 mb-6">
+              <button
+                @click="activeTab = 'general'"
+                :class="[
+                  'px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 border',
+                  activeTab === 'general' 
+                    ? 'bg-primary-50 border-primary-200 text-primary-700' 
+                    : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50'
+                ]"
+              >
+                <span class="flex items-center space-x-2">
+                  <span>🏢</span>
+                  <span>OSS Knowledge</span>
+                  <span class="px-2 py-0.5 text-xs rounded-full" style="background-color: var(--color-gray-100); color: var(--color-gray-600)">
+                    {{ documents.length }}
+                  </span>
+                </span>
+              </button>
+              <button
+                v-for="dept in departments"
+                :key="dept.id"
+                @click="activeTab = dept.id"
+                :class="[
+                  'px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 border',
+                  activeTab === dept.id 
+                    ? 'bg-primary-50 border-primary-200 text-primary-700' 
+                    : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50'
+                ]"
+              >
+                <span class="flex items-center space-x-2">
+                  <span>{{ dept.icon }}</span>
+                  <span>{{ dept.name }}</span>
+                  <span class="px-2 py-0.5 text-xs rounded-full" style="background-color: var(--color-gray-100); color: var(--color-gray-600)">
+                    {{ getDepartmentDocuments(dept.id).length }}
+                  </span>
+                </span>
               </button>
             </div>
 
             <!-- 문서 목록 -->
-            <div v-if="documents.length > 0" class="space-y-3">
+            <div v-if="getCurrentDocuments().length > 0" class="space-y-3">
               <div
-                v-for="doc in documents"
+                v-for="doc in getCurrentDocuments()"
                 :key="doc.id"
-                class="flex items-center justify-between p-4 border rounded-xl transition-all duration-200 hover:shadow-md hover:scale-[1.01]"
+                class="flex items-center justify-between p-4 border rounded-xl transition-all duration-200 hover:shadow-md"
                 style="border-color: var(--color-border-light); background-color: var(--color-bg-primary)"
                 onmouseover="this.style.backgroundColor='var(--color-bg-tertiary)'"
                 onmouseout="this.style.backgroundColor='var(--color-bg-primary)'"
@@ -152,6 +276,9 @@
                     <h3 class="text-sm font-medium" style="color: var(--color-gray-900)">{{ doc.name }}</h3>
                     <p class="text-xs" style="color: var(--color-gray-500)">
                       {{ formatFileSize(doc.size) }} • {{ formatDate(doc.uploadedAt) }}
+                      <span v-if="activeTab !== 'general' && doc.departmentId" class="ml-2 px-2 py-0.5 rounded text-xs" style="background-color: var(--color-primary-100); color: var(--color-primary-700)">
+                        {{ getDepartmentName(doc.departmentId) }}
+                      </span>
                     </p>
                   </div>
                 </div>
@@ -166,6 +293,18 @@
                   >
                     {{ getStatusText(doc.status) }}
                   </span>
+                  <button
+                    @click="downloadDocument(doc)"
+                    class="p-2 transition-all duration-200 rounded-lg hover:bg-blue-50"
+                    style="color: var(--color-gray-400)"
+                    onmouseover="this.style.color='var(--color-primary-500)'"
+                    onmouseout="this.style.color='var(--color-gray-400)'"
+                    title="다운로드"
+                  >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                  </button>
                   <button
                     @click="deleteDocument(doc.id)"
                     class="p-2 transition-all duration-200 rounded-lg hover:bg-red-50"
@@ -189,52 +328,9 @@
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                 </svg>
               </div>
-              <p style="color: var(--color-gray-500)">아직 업로드된 문서가 없습니다</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- 통계 카드 -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div class="bg-white rounded-xl shadow-sm border p-6 transition-all duration-200 hover:shadow-md hover:scale-[1.02]" style="border-color: var(--color-border-light)">
-            <div class="flex items-center">
-              <div class="w-12 h-12 rounded-xl flex items-center justify-center" style="background: linear-gradient(135deg, var(--color-primary-100), var(--color-primary-200))">
-                <svg class="w-6 h-6" style="color: var(--color-primary-600)" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                </svg>
-              </div>
-              <div class="ml-4">
-                <p class="text-2xl font-bold" style="color: var(--color-gray-900)">{{ documents.length }}</p>
-                <p class="text-sm" style="color: var(--color-gray-500)">총 문서 수</p>
-              </div>
-            </div>
-          </div>
-
-          <div class="bg-white rounded-xl shadow-sm border p-6 transition-all duration-200 hover:shadow-md hover:scale-[1.02]" style="border-color: var(--color-border-light)">
-            <div class="flex items-center">
-              <div class="w-12 h-12 rounded-xl flex items-center justify-center" style="background: linear-gradient(135deg, var(--color-success-100), var(--color-success-200))">
-                <svg class="w-6 h-6" style="color: var(--color-success-600)" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                </svg>
-              </div>
-              <div class="ml-4">
-                <p class="text-2xl font-bold" style="color: var(--color-gray-900)">{{ processedCount }}</p>
-                <p class="text-sm" style="color: var(--color-gray-500)">처리 완료</p>
-              </div>
-            </div>
-          </div>
-
-          <div class="bg-white rounded-xl shadow-sm border p-6 transition-all duration-200 hover:shadow-md hover:scale-[1.02]" style="border-color: var(--color-border-light)">
-            <div class="flex items-center">
-              <div class="w-12 h-12 rounded-xl flex items-center justify-center" style="background: linear-gradient(135deg, var(--color-warning-100), var(--color-warning-200))">
-                <svg class="w-6 h-6" style="color: var(--color-warning-600)" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                </svg>
-              </div>
-              <div class="ml-4">
-                <p class="text-2xl font-bold" style="color: var(--color-gray-900)">{{ processingCount }}</p>
-                <p class="text-sm" style="color: var(--color-gray-500)">처리 중</p>
-              </div>
+              <p style="color: var(--color-gray-500)">
+                {{ activeTab === 'general' ? 'OSS Knowledge에 업로드된 문서가 없습니다' : `${getDepartmentName(activeTab)}에 업로드된 문서가 없습니다` }}
+              </p>
             </div>
           </div>
         </div>
@@ -246,19 +342,65 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useDataUploadStore } from '@/stores/dataUpload'
+import { useRAGDepartmentsStore } from '@/stores/ragDepartments'
 
 const dataUploadStore = useDataUploadStore()
+const ragDepartmentsStore = useRAGDepartmentsStore()
 
 // 반응형 상태
 const selectedFiles = ref([])
 const isDragOver = ref(false)
 const isUploading = ref(false)
 const fileInput = ref(null)
+const selectedDepartment = ref(null)
+const activeTab = ref('general')
 
 // 계산된 속성
 const documents = computed(() => dataUploadStore.documents)
-const processedCount = computed(() => documents.value.filter(doc => doc.status === 'processed').length)
-const processingCount = computed(() => documents.value.filter(doc => doc.status === 'processing').length)
+const departments = computed(() => ragDepartmentsStore.departments)
+
+// Azure 연결 상태
+const azureConnectionStatus = computed(() => dataUploadStore.azureConnectionStatus)
+const isSyncing = computed(() => dataUploadStore.isSyncing)
+
+// 현재 탭의 문서 가져오기
+const getCurrentDocuments = () => {
+  if (activeTab.value === 'general') {
+    return documents.value
+  } else {
+    return dataUploadStore.getDepartmentDocuments(activeTab.value)
+  }
+}
+
+// 부서별 문서 가져오기
+const getDepartmentDocuments = (departmentId) => {
+  return dataUploadStore.getDepartmentDocuments(departmentId)
+}
+
+// 선택된 부서 이름 가져오기
+const getSelectedDepartmentName = () => {
+  if (!selectedDepartment.value) return 'OSS Knowledge'
+  const dept = ragDepartmentsStore.getDepartmentById(selectedDepartment.value)
+  return dept ? dept.name : '알 수 없음'
+}
+
+// 선택된 부서 설명 가져오기
+const getSelectedDepartmentDescription = () => {
+  if (!selectedDepartment.value) return '일반적인 문서 업로드'
+  const dept = ragDepartmentsStore.getDepartmentById(selectedDepartment.value)
+  return dept ? dept.description : ''
+}
+
+// 부서 이름 가져오기
+const getDepartmentName = (departmentId) => {
+  const dept = ragDepartmentsStore.getDepartmentById(departmentId)
+  return dept ? dept.name : '알 수 없음'
+}
+
+// 모든 문서 수 계산
+const getAllDocumentsCount = () => {
+  return dataUploadStore.getAllDocuments().length
+}
 
 // 파일 선택 트리거
 const triggerFileInput = () => {
@@ -316,9 +458,9 @@ const uploadFiles = async () => {
   isUploading.value = true
   
   try {
-    await dataUploadStore.uploadFiles(selectedFiles.value)
+    await dataUploadStore.uploadFiles(selectedFiles.value, selectedDepartment.value)
     selectedFiles.value = []
-    alert('파일 업로드가 완료되었습니다.')
+    alert(`파일 업로드가 완료되었습니다.${selectedDepartment.value ? ` (${getSelectedDepartmentName()})` : ''}`)
   } catch (error) {
     alert('업로드 중 오류가 발생했습니다: ' + error.message)
   } finally {
@@ -326,11 +468,31 @@ const uploadFiles = async () => {
   }
 }
 
+// 문서 다운로드
+const downloadDocument = async (doc) => {
+  try {
+    const departmentId = activeTab.value === 'general' ? null : activeTab.value
+    const blob = await dataUploadStore.downloadDocument(doc.id, departmentId)
+    
+    const downloadUrl = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = downloadUrl
+    link.download = doc.name
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(downloadUrl)
+  } catch (error) {
+    alert('다운로드 중 오류가 발생했습니다: ' + error.message)
+  }
+}
+
 // 문서 삭제
 const deleteDocument = async (id) => {
   if (confirm('이 문서를 삭제하시겠습니까?')) {
     try {
-      await dataUploadStore.deleteDocument(id)
+      const departmentId = activeTab.value === 'general' ? null : activeTab.value
+      await dataUploadStore.deleteDocument(id, departmentId)
     } catch (error) {
       alert('삭제 중 오류가 발생했습니다: ' + error.message)
     }
@@ -339,7 +501,24 @@ const deleteDocument = async (id) => {
 
 // 문서 목록 새로고침
 const refreshDocuments = () => {
-  dataUploadStore.fetchDocuments()
+  if (activeTab.value === 'general') {
+    dataUploadStore.fetchDocuments()
+  } else {
+    dataUploadStore.fetchDocuments(activeTab.value)
+  }
+}
+
+// Azure File Share 동기화
+const syncAzureFileShare = async () => {
+  if (confirm('Azure File Share와 동기화하시겠습니까? 이 작업은 데이터를 초기화하고 다시 업로드합니다.')) {
+    try {
+      await dataUploadStore.syncAzureFileShare()
+      alert('Azure File Share 동기화가 완료되었습니다.')
+      refreshDocuments() // 동기화 후 문서 목록 새로고침
+    } catch (error) {
+      alert('Azure File Share 동기화 중 오류가 발생했습니다: ' + error.message)
+    }
+  }
 }
 
 // 파일 크기 포맷팅
@@ -383,7 +562,17 @@ const handleDragLeave = () => {
 }
 
 // 컴포넌트 마운트 시 문서 목록 로드
-onMounted(() => {
+onMounted(async () => {
   dataUploadStore.fetchDocuments()
+  // 모든 부서의 문서도 로드
+  const departmentIds = departments.value.map(dept => dept.id)
+  dataUploadStore.fetchAllDepartmentDocuments(departmentIds)
+  
+  // Azure 연결 상태 확인
+  try {
+    await dataUploadStore.checkAzureConnection()
+  } catch (error) {
+    console.warn('Azure 연결 상태 확인 실패:', error)
+  }
 })
 </script>

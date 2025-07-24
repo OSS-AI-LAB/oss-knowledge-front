@@ -230,8 +230,8 @@ const mockData = {
     { id: 'worker5', name: '최영수', level: '중급자', department: 'AI팀', status: 'available' }
   ],
   managers: [
-    { id: 'manager1', name: '김매니저', department: '고객지원팀', email: 'kim.manager@company.com' },
-    { id: 'manager2', name: '이매니저', department: '기술지원팀', email: 'lee.manager@company.com' },
+    { id: 'manager1', name: '김매니저', department: 'WM', email: 'kim.manager@company.com' },
+    { id: 'manager2', name: '이매니저', department: 'LEAN', email: 'lee.manager@company.com' },
     { id: 'manager3', name: '박매니저', department: '운영팀', email: 'park.manager@company.com' },
     { id: 'manager4', name: '정매니저', department: 'AI팀', email: 'jung.manager@company.com' }
   ]

@@ -164,9 +164,9 @@ let isAutoScrolling = ref(false);
 const suggestions = ref([
     {
         icon: "💡",
-        title: "Vue.js 프로젝트 개선",
-        description: "코드 구조나 성능 최적화에 대해 문의하세요",
-        text: "Vue.js 프로젝트의 성능을 개선하는 방법을 알려주세요",
+        title: "OSS-OM 조회 권한 신청",
+        description: "필요한 조회 권한을 신청해주세요",
+        text: "OSS-OM 조회 권한을 신청해주세요",
     },
     {
         icon: "🎨",

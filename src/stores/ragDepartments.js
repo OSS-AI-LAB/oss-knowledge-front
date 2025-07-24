@@ -6,7 +6,7 @@ export const useRAGDepartmentsStore = defineStore('ragDepartments', () => {
   const departments = ref([
     {
       id: 'tech-support',
-      name: '기술지원팀',
+      name: 'LEAN',
       description: '기술 관련 문의 및 문제 해결',
       icon: '🔧',
       color: 'blue',
@@ -14,7 +14,7 @@ export const useRAGDepartmentsStore = defineStore('ragDepartments', () => {
     },
     {
       id: 'customer-service',
-      name: '고객지원팀',
+      name: 'WM',
       description: '고객 문의 및 서비스 관련',
       icon: '👥',
       color: 'green',
@@ -22,7 +22,7 @@ export const useRAGDepartmentsStore = defineStore('ragDepartments', () => {
     },
     {
       id: 'billing',
-      name: '결제팀',
+      name: 'PNA',
       description: '결제 및 요금 관련 문의',
       icon: '💳',
       color: 'purple',
