@@ -353,23 +353,23 @@
                         :key="conv.id"
                         @click="conversationStore.selectConversation(conv.id)"
                         :class="[
-                            'group flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all duration-200 hover:bg-gray-50',
+                            'group flex items-center gap-3 p-2.5 rounded-lg cursor-pointer transition-all duration-200',
                             conversationStore.currentConversationId === conv.id
-                                ? 'bg-primary-50 border border-primary-200'
-                                : '',
+                                ? 'bg-blue-50 text-blue-700' 
+                                : 'hover:bg-gray-50 text-gray-700',
                         ]"
                     >
                         <!-- 대화 아이콘 -->
                         <div
                             :class="[
-                                'flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center',
+                                'flex-shrink-0 w-6 h-6 rounded-md flex items-center justify-center',
                                 conversationStore.currentConversationId === conv.id
-                                    ? 'bg-primary-100 text-primary-600'
-                                    : 'bg-gray-100 text-gray-600',
+                                    ? 'bg-blue-100 text-blue-600'
+                                    : 'bg-gray-100 text-gray-500',
                             ]"
                         >
                             <svg
-                                class="w-4 h-4"
+                                class="w-3 h-3"
                                 fill="none"
                                 stroke="currentColor"
                                 viewBox="0 0 24 24"
@@ -385,10 +385,10 @@
 
                         <!-- 대화 정보 -->
                         <div class="flex-1 min-w-0">
-                            <div class="text-sm font-medium text-gray-900 truncate">
+                            <div class="text-sm font-medium truncate">
                                 {{ conv.title }}
                             </div>
-                            <div class="text-xs text-gray-500 mt-1">
+                            <div class="text-xs text-gray-500 mt-0.5">
                                 {{ formatTime(conv.updatedAt) }}
                             </div>
                         </div>
@@ -401,7 +401,7 @@
                                 title="삭제"
                             >
                                 <svg
-                                    class="w-4 h-4"
+                                    class="w-3 h-3"
                                     fill="none"
                                     stroke="currentColor"
                                     viewBox="0 0 24 24"

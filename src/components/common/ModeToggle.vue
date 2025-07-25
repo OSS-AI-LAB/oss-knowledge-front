@@ -77,7 +77,7 @@ const toggleMode = () => {
 .toggle-thumb {
   position: absolute;
   top: 3px;
-  left: 3px;
+  left: 1px;
   width: 30px;
   height: 30px;
   background: white;
@@ -91,7 +91,7 @@ const toggleMode = () => {
 }
 
 .toggle-thumb.translate-x-6 {
-  transform: translateX(67px);
+  transform: translateX(65px);
 }
 
 .thumb-icon {

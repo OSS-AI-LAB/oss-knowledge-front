@@ -516,15 +516,23 @@ onUnmounted(() => {
 /* 반응형 최대 너비 */
 @media (max-width: 1024px) {
     .relative.mb-6 {
-        max-width: 700px;
+        max-width: 500px;
     }
 }
 
 @media (max-width: 768px) {
     .relative.mb-6 {
-        max-width: 100%;
+        max-width: calc(100% - 2rem);
         margin-left: 1rem;
         margin-right: 1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .relative.mb-6 {
+        max-width: calc(100% - 1rem);
+        margin-left: 0.5rem;
+        margin-right: 0.5rem;
     }
 }
 </style>
