@@ -41,7 +41,7 @@ export const useDataUploadStore = defineStore('dataUpload', () => {
       const dummyData = [
         {
           id: '1',
-          name: 'sample-document.pdf',
+          name: 'OSS-Knowledge-Guide.pdf',
           size: 1024000,
           status: 'processed',
           uploadedAt: new Date().toISOString(),
@@ -49,10 +49,26 @@ export const useDataUploadStore = defineStore('dataUpload', () => {
         },
         {
           id: '2',
-          name: 'user-manual.docx',
+          name: 'User-Manual.docx',
           size: 2048000,
           status: 'processing',
           uploadedAt: new Date(Date.now() - 3600000).toISOString(),
+          departmentId: departmentId || null
+        },
+        {
+          id: '3',
+          name: 'API-Documentation.pdf',
+          size: 1536000,
+          status: 'processed',
+          uploadedAt: new Date(Date.now() - 7200000).toISOString(),
+          departmentId: departmentId || null
+        },
+        {
+          id: '4',
+          name: 'Troubleshooting-Guide.pdf',
+          size: 3072000,
+          status: 'processed',
+          uploadedAt: new Date(Date.now() - 10800000).toISOString(),
           departmentId: departmentId || null
         }
       ]
@@ -62,6 +78,9 @@ export const useDataUploadStore = defineStore('dataUpload', () => {
       } else {
         documents.value = dummyData
       }
+      
+      // 백엔드 연결 실패 시에도 에러를 던지지 않고 계속 진행
+      console.log('백엔드 연결 실패, 더미 데이터로 계속 진행:', err.message)
     } finally {
       isLoading.value = false
     }
@@ -77,6 +96,33 @@ export const useDataUploadStore = defineStore('dataUpload', () => {
       await Promise.all(promises)
     } catch (err) {
       error.value = err.message
+      // 백엔드 연결 실패 시에도 더미 데이터로 계속 진행
+      console.log('백엔드 연결 실패, 더미 데이터로 계속 진행:', err.message)
+      
+      // 각 부서별로 더미 데이터 생성
+      departmentIds.forEach(deptId => {
+        if (!departmentDocuments.value[deptId]) {
+          const dummyData = [
+            {
+              id: `${deptId}-1`,
+              name: `${deptId}-sample-doc.pdf`,
+              size: 1024000,
+              status: 'processed',
+              uploadedAt: new Date().toISOString(),
+              departmentId: deptId
+            },
+            {
+              id: `${deptId}-2`,
+              name: `${deptId}-manual.docx`,
+              size: 2048000,
+              status: 'processing',
+              uploadedAt: new Date(Date.now() - 3600000).toISOString(),
+              departmentId: deptId
+            }
+          ]
+          departmentDocuments.value[deptId] = dummyData
+        }
+      })
     } finally {
       isLoading.value = false
     }
@@ -197,16 +243,28 @@ export const useDataUploadStore = defineStore('dataUpload', () => {
 
   // 부서별 문서 가져오기
   const getDepartmentDocuments = (departmentId) => {
-    return departmentDocuments.value[departmentId] || []
+    try {
+      return departmentDocuments.value[departmentId] || []
+    } catch (error) {
+      console.log(`부서 ${departmentId} 문서 조회 중 오류, 빈 배열 반환:`, error.message)
+      return []
+    }
   }
 
   // 모든 문서 가져오기 (일반 + 부서별)
   const getAllDocuments = () => {
-    const allDocs = [...documents.value]
-    Object.values(departmentDocuments.value).forEach(deptDocs => {
-      allDocs.push(...deptDocs)
-    })
-    return allDocs
+    try {
+      const allDocs = [...(documents.value || [])]
+      Object.values(departmentDocuments.value || {}).forEach(deptDocs => {
+        if (deptDocs && Array.isArray(deptDocs)) {
+          allDocs.push(...deptDocs)
+        }
+      })
+      return allDocs
+    } catch (error) {
+      console.log('모든 문서 조회 중 오류, 빈 배열 반환:', error.message)
+      return []
+    }
   }
 
   // Azure File Share 연결 상태 확인

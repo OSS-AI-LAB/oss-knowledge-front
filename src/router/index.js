@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import ChatView from '@/views/ChatView.vue'
 import AgentView from '@/views/AgentView.vue'
 import DataUploadView from '@/views/DataUploadView.vue'
+import RAGManagementView from '@/views/RAGManagementView.vue'
 
 const routes = [
   {
@@ -23,6 +24,11 @@ const routes = [
     path: '/upload',
     name: 'upload',
     component: DataUploadView
+  },
+  {
+    path: '/rag-management',
+    name: 'rag-management',
+    component: RAGManagementView
   }
 ]
 

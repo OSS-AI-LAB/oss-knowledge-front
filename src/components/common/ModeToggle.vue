@@ -91,7 +91,7 @@ const toggleMode = () => {
 }
 
 .toggle-thumb.translate-x-6 {
-  transform: translateX(65px);
+  transform: translateX(67px);
 }
 
 .thumb-icon {
