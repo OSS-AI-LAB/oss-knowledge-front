@@ -2,20 +2,71 @@
   <div class="h-full flex flex-col" style="background-color: var(--color-bg-secondary)">
     <!-- 헤더 -->
     <div class="bg-white border-b px-6 py-4" style="border-color: var(--color-border-light)">
-      <div class="max-w-4xl mx-auto">
+      <div class="max-w-6xl mx-auto">
         <h1 class="text-2xl font-bold" style="color: var(--color-gray-900)">데이터 업로드</h1>
-        <p class="mt-1" style="color: var(--color-gray-600)">RAG 시스템에 사용할 문서와 데이터를 업로드하세요</p>
+        <p class="mt-1" style="color: var(--color-gray-600)">OSS Knowledge 및 개별 RAG 시스템에 사용할 문서를 업로드하세요</p>
       </div>
     </div>
 
     <!-- 메인 컨텐츠 -->
     <div class="flex-1 overflow-y-auto">
-      <div class="max-w-4xl mx-auto p-6 space-y-8">
+      <div class="max-w-6xl mx-auto p-6 space-y-6">
         <!-- 업로드 영역 -->
-        <div class="bg-white rounded-xl shadow-sm border" style="border-color: var(--color-border-light)">
+        <div class="bg-white rounded-xl shadow-md border-0 overflow-hidden">
           <div class="p-6">
-            <h2 class="text-lg font-semibold mb-4" style="color: var(--color-gray-900)">파일 업로드</h2>
+            <div class="text-center mb-6">
+              <h2 class="text-2xl font-bold mb-2" style="color: var(--color-gray-900)">파일 업로드</h2>
+              <p class="text-gray-600 text-sm">문서를 업로드하여 지식 베이스를 구축하세요</p>
+            </div>
             
+            <!-- 부서 선택 -->
+            <div class="mb-6">
+              <label class="block text-base font-semibold mb-3 text-center" style="color: var(--color-gray-800)">
+                업로드 대상 선택
+              </label>
+              <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 max-w-3xl mx-auto">
+                <button
+                  @click="selectedDepartment = null"
+                  :class="[
+                    'group relative p-4 rounded-xl border-2 transition-all duration-200 text-center',
+                    selectedDepartment === null 
+                      ? 'border-primary-500 bg-primary-50 shadow-md' 
+                      : 'border-gray-200 hover:border-primary-300 hover:bg-gray-50'
+                  ]"
+                >
+                  <div class="text-2xl mb-2">🏢</div>
+                  <div class="text-xs font-medium mb-1" style="color: var(--color-gray-900)">OSS Knowledge</div>
+                  <div class="text-xs" style="color: var(--color-gray-600)">일반 문서</div>
+                  <div v-if="selectedDepartment === null" class="absolute top-2 right-2 w-2 h-2 rounded-full bg-primary-500"></div>
+                </button>
+                <button
+                  v-for="dept in departments"
+                  :key="dept.id"
+                  @click="selectedDepartment = dept.id"
+                  :class="[
+                    'group relative p-4 rounded-xl border-2 transition-all duration-200 text-center',
+                    selectedDepartment === dept.id 
+                      ? 'border-primary-500 bg-primary-50 shadow-md' 
+                      : 'border-gray-200 hover:border-primary-300 hover:bg-gray-50'
+                  ]"
+                >
+                  <div class="text-2xl mb-2">{{ dept.icon }}</div>
+                  <div class="text-xs font-medium mb-1" style="color: var(--color-gray-900)">{{ dept.name }}</div>
+                  <div class="text-xs" style="color: var(--color-gray-600)">{{ dept.description }}</div>
+                  <div v-if="selectedDepartment === dept.id" class="absolute top-2 right-2 w-2 h-2 rounded-full bg-primary-500"></div>
+                </button>
+              </div>
+              <div v-if="selectedDepartment" class="mt-4 text-center">
+                <div class="inline-flex items-center px-3 py-1.5 rounded-full bg-primary-100 text-primary-800 text-sm">
+                  <svg class="w-3 h-3 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                  </svg>
+                  <span class="font-medium">{{ getSelectedDepartmentName() }}</span>
+                  <span class="ml-2 text-xs opacity-75">{{ getSelectedDepartmentDescription() }}</span>
+                </div>
+              </div>
+            </div>      
+      
             <!-- 드래그 앤 드롭 영역 -->
             <div
               @drop="handleDrop"
@@ -23,23 +74,27 @@
               @dragenter="handleDragEnter"
               @dragleave="handleDragLeave"
               :class="[
-                'border-2 border-dashed rounded-xl p-8 text-center transition-all duration-300',
-                isDragOver ? 'border-primary-400 bg-primary-50 scale-105' : 'border-gray-300 hover:border-primary-300 hover:bg-primary-25'
+                'border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200 relative',
+                isDragOver ? 'border-primary-400 bg-primary-50' : 'border-gray-300 hover:border-primary-300 hover:bg-gray-50'
               ]"
-              :style="isDragOver ? 'border-color: var(--color-primary-400); background-color: var(--color-primary-50)' : 'border-color: var(--color-gray-300)'"
             >
               <div class="space-y-4">
-                <div class="mx-auto w-16 h-16 rounded-full flex items-center justify-center" style="background: linear-gradient(135deg, var(--color-primary-100), var(--color-secondary-100))">
-                  <svg class="w-8 h-8" style="color: var(--color-primary-600)" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="mx-auto w-16 h-16 rounded-full flex items-center justify-center bg-primary-100">
+                  <svg class="w-8 h-8 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
                   </svg>
                 </div>
                 <div>
-                  <p class="text-lg font-medium" style="color: var(--color-gray-900)">파일을 드래그하여 업로드하거나</p>
+                  <p class="text-lg font-medium mb-2" style="color: var(--color-gray-900)">
+                    {{ selectedDepartment ? `${getSelectedDepartmentName()}에 파일을 드래그하여 업로드하거나` : '파일을 드래그하여 업로드하거나' }}
+                  </p>
                   <button
                     @click="triggerFileInput"
-                    class="btn btn-primary mt-3"
+                    class="inline-flex items-center px-4 py-2 bg-primary-500 text-white font-medium rounded-lg hover:bg-primary-600 transition-colors duration-200"
                   >
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                    </svg>
                     파일 선택
                   </button>
                   <input
@@ -51,41 +106,57 @@
                     class="hidden"
                   >
                 </div>
-                <p class="text-sm" style="color: var(--color-gray-500)">
-                  지원 형식: PDF, TXT, MD, DOC, DOCX (최대 10MB)
-                </p>
+                <div class="flex items-center justify-center space-x-4 text-sm" style="color: var(--color-gray-500)">
+                  <span class="flex items-center">
+                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    PDF, TXT, MD, DOC, DOCX
+                  </span>
+                  <span class="flex items-center">
+                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                    </svg>
+                    최대 10MB
+                  </span>
+                </div>
               </div>
             </div>
 
             <!-- 선택된 파일 목록 -->
             <div v-if="selectedFiles.length > 0" class="mt-6">
-              <h3 class="text-sm font-medium mb-3" style="color: var(--color-gray-900)">선택된 파일 ({{ selectedFiles.length }}개)</h3>
-              <div class="space-y-2">
+              <div class="text-center mb-3">
+                <h3 class="text-base font-semibold mb-1" style="color: var(--color-gray-900)">
+                  선택된 파일 ({{ selectedFiles.length }}개)
+                </h3>
+                <p v-if="selectedDepartment" class="text-sm" style="color: var(--color-primary-600)">
+                  → {{ getSelectedDepartmentName() }}에 업로드됩니다
+                </p>
+              </div>
+              <div class="space-y-2 max-w-2xl mx-auto">
                 <div
                   v-for="(file, index) in selectedFiles"
                   :key="index"
-                  class="flex items-center justify-between p-3 rounded-lg transition-all duration-200 hover:shadow-sm"
-                  style="background-color: var(--color-bg-tertiary)"
+                  class="flex items-center justify-between p-3 rounded-lg transition-colors duration-200 hover:bg-gray-50"
+                  style="background: var(--color-primary-50); border: 1px solid var(--color-primary-200)"
                 >
                   <div class="flex items-center space-x-3">
-                    <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background: linear-gradient(135deg, var(--color-primary-100), var(--color-primary-200))">
-                      <svg class="w-4 h-4" style="color: var(--color-primary-600)" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div class="w-8 h-8 rounded-lg flex items-center justify-center bg-primary-500">
+                      <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                       </svg>
                     </div>
                     <div>
                       <p class="text-sm font-medium" style="color: var(--color-gray-900)">{{ file.name }}</p>
-                      <p class="text-xs" style="color: var(--color-gray-500)">{{ formatFileSize(file.size) }}</p>
+                      <p class="text-xs" style="color: var(--color-primary-600)">{{ formatFileSize(file.size) }}</p>
                     </div>
                   </div>
                   <button
                     @click="removeFile(index)"
-                    class="p-1 transition-colors hover:bg-red-50 rounded-lg"
+                    class="p-1.5 transition-colors duration-200 rounded hover:bg-red-100"
                     style="color: var(--color-gray-400)"
-                    onmouseover="this.style.color='var(--color-error-500)'"
-                    onmouseout="this.style.color='var(--color-gray-400)'"
                   >
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-4 h-4 hover:text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                     </svg>
                   </button>
@@ -94,11 +165,11 @@
             </div>
 
             <!-- 업로드 버튼 -->
-            <div v-if="selectedFiles.length > 0" class="mt-6 flex justify-end">
+            <div v-if="selectedFiles.length > 0" class="mt-6 text-center">
               <button
                 @click="uploadFiles"
                 :disabled="isUploading"
-                class="btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                class="inline-flex items-center px-6 py-3 bg-green-500 text-white font-semibold rounded-lg hover:bg-green-600 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <span v-if="isUploading" class="flex items-center">
                   <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
@@ -107,134 +178,40 @@
                   </svg>
                   업로드 중...
                 </span>
-                <span v-else>업로드 시작</span>
+                <span v-else class="flex items-center">
+                  <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                  </svg>
+                  {{ selectedDepartment ? `${getSelectedDepartmentName()}에 업로드` : '업로드 시작' }}
+                </span>
               </button>
             </div>
           </div>
         </div>
 
-        <!-- 업로드된 문서 목록 -->
-        <div class="bg-white rounded-xl shadow-sm border" style="border-color: var(--color-border-light)">
-          <div class="p-6">
-            <div class="flex items-center justify-between mb-4">
-              <h2 class="text-lg font-semibold" style="color: var(--color-gray-900)">업로드된 문서</h2>
-              <button
-                @click="refreshDocuments"
-                class="p-2 transition-colors rounded-lg hover:bg-gray-50"
-                style="color: var(--color-gray-400)"
-                onmouseover="this.style.color='var(--color-gray-600)'"
-                onmouseout="this.style.color='var(--color-gray-400)'"
-                title="새로고침"
+        <!-- RAG 관리 링크 -->
+        <div class="bg-blue-50 rounded-xl shadow-md border-0">
+          <div class="p-6 text-center">
+            <div class="mb-4">
+              <div class="mx-auto w-12 h-12 rounded-full flex items-center justify-center mb-3 bg-blue-500">
+                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                </svg>
+              </div>
+              <h2 class="text-xl font-bold mb-2" style="color: var(--color-gray-900)">RAG 시스템 관리</h2>
+              <p class="text-gray-600 mb-4 text-sm">
+                업로드된 문서를 확인하고 RAG 시스템을 관리하세요
+              </p>
+              <router-link
+                to="/rag-management"
+                class="inline-flex items-center px-4 py-2 bg-blue-500 text-white font-medium rounded-lg hover:bg-blue-600 transition-colors duration-200"
               >
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
                 </svg>
-              </button>
-            </div>
-
-            <!-- 문서 목록 -->
-            <div v-if="documents.length > 0" class="space-y-3">
-              <div
-                v-for="doc in documents"
-                :key="doc.id"
-                class="flex items-center justify-between p-4 border rounded-xl transition-all duration-200 hover:shadow-md hover:scale-[1.01]"
-                style="border-color: var(--color-border-light); background-color: var(--color-bg-primary)"
-                onmouseover="this.style.backgroundColor='var(--color-bg-tertiary)'"
-                onmouseout="this.style.backgroundColor='var(--color-bg-primary)'"
-              >
-                <div class="flex items-center space-x-4">
-                  <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background: linear-gradient(135deg, var(--color-success-50), var(--color-success-100))">
-                    <svg class="w-5 h-5" style="color: var(--color-success-600)" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                    </svg>
-                  </div>
-                  <div>
-                    <h3 class="text-sm font-medium" style="color: var(--color-gray-900)">{{ doc.name }}</h3>
-                    <p class="text-xs" style="color: var(--color-gray-500)">
-                      {{ formatFileSize(doc.size) }} • {{ formatDate(doc.uploadedAt) }}
-                    </p>
-                  </div>
-                </div>
-                <div class="flex items-center space-x-2">
-                  <span
-                    :class="[
-                      'px-3 py-1 text-xs rounded-full font-medium',
-                      doc.status === 'processed' ? 'badge-success' :
-                      doc.status === 'processing' ? 'badge-warning' :
-                      'badge-error'
-                    ]"
-                  >
-                    {{ getStatusText(doc.status) }}
-                  </span>
-                  <button
-                    @click="deleteDocument(doc.id)"
-                    class="p-2 transition-all duration-200 rounded-lg hover:bg-red-50"
-                    style="color: var(--color-gray-400)"
-                    onmouseover="this.style.color='var(--color-error-500)'"
-                    onmouseout="this.style.color='var(--color-gray-400)'"
-                    title="삭제"
-                  >
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                    </svg>
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <!-- 빈 상태 -->
-            <div v-else class="text-center py-12">
-              <div class="mx-auto w-16 h-16 rounded-full flex items-center justify-center mb-4" style="background: linear-gradient(135deg, var(--color-gray-100), var(--color-gray-200))">
-                <svg class="w-8 h-8" style="color: var(--color-gray-400)" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                </svg>
-              </div>
-              <p style="color: var(--color-gray-500)">아직 업로드된 문서가 없습니다</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- 통계 카드 -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div class="bg-white rounded-xl shadow-sm border p-6 transition-all duration-200 hover:shadow-md hover:scale-[1.02]" style="border-color: var(--color-border-light)">
-            <div class="flex items-center">
-              <div class="w-12 h-12 rounded-xl flex items-center justify-center" style="background: linear-gradient(135deg, var(--color-primary-100), var(--color-primary-200))">
-                <svg class="w-6 h-6" style="color: var(--color-primary-600)" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                </svg>
-              </div>
-              <div class="ml-4">
-                <p class="text-2xl font-bold" style="color: var(--color-gray-900)">{{ documents.length }}</p>
-                <p class="text-sm" style="color: var(--color-gray-500)">총 문서 수</p>
-              </div>
-            </div>
-          </div>
-
-          <div class="bg-white rounded-xl shadow-sm border p-6 transition-all duration-200 hover:shadow-md hover:scale-[1.02]" style="border-color: var(--color-border-light)">
-            <div class="flex items-center">
-              <div class="w-12 h-12 rounded-xl flex items-center justify-center" style="background: linear-gradient(135deg, var(--color-success-100), var(--color-success-200))">
-                <svg class="w-6 h-6" style="color: var(--color-success-600)" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                </svg>
-              </div>
-              <div class="ml-4">
-                <p class="text-2xl font-bold" style="color: var(--color-gray-900)">{{ processedCount }}</p>
-                <p class="text-sm" style="color: var(--color-gray-500)">처리 완료</p>
-              </div>
-            </div>
-          </div>
-
-          <div class="bg-white rounded-xl shadow-sm border p-6 transition-all duration-200 hover:shadow-md hover:scale-[1.02]" style="border-color: var(--color-border-light)">
-            <div class="flex items-center">
-              <div class="w-12 h-12 rounded-xl flex items-center justify-center" style="background: linear-gradient(135deg, var(--color-warning-100), var(--color-warning-200))">
-                <svg class="w-6 h-6" style="color: var(--color-warning-600)" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                </svg>
-              </div>
-              <div class="ml-4">
-                <p class="text-2xl font-bold" style="color: var(--color-gray-900)">{{ processingCount }}</p>
-                <p class="text-sm" style="color: var(--color-gray-500)">처리 중</p>
-              </div>
+                RAG 관리 페이지로 이동
+              </router-link>
             </div>
           </div>
         </div>
@@ -242,23 +219,37 @@
     </div>
   </div>
 </template>
-
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useDataUploadStore } from '@/stores/dataUpload'
+import { useRAGDepartmentsStore } from '@/stores/ragDepartments'
 
 const dataUploadStore = useDataUploadStore()
+const ragDepartmentsStore = useRAGDepartmentsStore()
 
 // 반응형 상태
 const selectedFiles = ref([])
 const isDragOver = ref(false)
 const isUploading = ref(false)
 const fileInput = ref(null)
+const selectedDepartment = ref(null)
 
 // 계산된 속성
-const documents = computed(() => dataUploadStore.documents)
-const processedCount = computed(() => documents.value.filter(doc => doc.status === 'processed').length)
-const processingCount = computed(() => documents.value.filter(doc => doc.status === 'processing').length)
+const departments = computed(() => ragDepartmentsStore.departments)
+
+// 선택된 부서 이름 가져오기
+const getSelectedDepartmentName = () => {
+  if (!selectedDepartment.value) return 'OSS Knowledge'
+  const dept = ragDepartmentsStore.getDepartmentById(selectedDepartment.value)
+  return dept ? dept.name : '알 수 없음'
+}
+
+// 선택된 부서 설명 가져오기
+const getSelectedDepartmentDescription = () => {
+  if (!selectedDepartment.value) return '일반적인 문서 업로드'
+  const dept = ragDepartmentsStore.getDepartmentById(selectedDepartment.value)
+  return dept ? dept.description : ''
+}
 
 // 파일 선택 트리거
 const triggerFileInput = () => {
@@ -316,9 +307,9 @@ const uploadFiles = async () => {
   isUploading.value = true
   
   try {
-    await dataUploadStore.uploadFiles(selectedFiles.value)
+    await dataUploadStore.uploadFiles(selectedFiles.value, selectedDepartment.value)
     selectedFiles.value = []
-    alert('파일 업로드가 완료되었습니다.')
+    alert(`파일 업로드가 완료되었습니다.${selectedDepartment.value ? ` (${getSelectedDepartmentName()})` : ''}`)
   } catch (error) {
     alert('업로드 중 오류가 발생했습니다: ' + error.message)
   } finally {
@@ -326,21 +317,7 @@ const uploadFiles = async () => {
   }
 }
 
-// 문서 삭제
-const deleteDocument = async (id) => {
-  if (confirm('이 문서를 삭제하시겠습니까?')) {
-    try {
-      await dataUploadStore.deleteDocument(id)
-    } catch (error) {
-      alert('삭제 중 오류가 발생했습니다: ' + error.message)
-    }
-  }
-}
 
-// 문서 목록 새로고침
-const refreshDocuments = () => {
-  dataUploadStore.fetchDocuments()
-}
 
 // 파일 크기 포맷팅
 const formatFileSize = (bytes) => {
@@ -363,15 +340,7 @@ const formatDate = (dateStr) => {
   })
 }
 
-// 상태 텍스트
-const getStatusText = (status) => {
-  const statusMap = {
-    'processed': '처리완료',
-    'processing': '처리중',
-    'failed': '실패'
-  }
-  return statusMap[status] || status
-}
+
 
 // 드래그 이벤트 처리
 const handleDragEnter = () => {
@@ -382,8 +351,8 @@ const handleDragLeave = () => {
   isDragOver.value = false
 }
 
-// 컴포넌트 마운트 시 문서 목록 로드
+// 컴포넌트 마운트 시 부서 목록 로드
 onMounted(() => {
-  dataUploadStore.fetchDocuments()
+  // 부서 목록만 로드 (문서는 RAG 관리 페이지에서 관리)
 })
 </script>

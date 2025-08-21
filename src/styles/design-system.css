@@ -2,7 +2,7 @@
 
 /* ===== COLOR SYSTEM ===== */
 :root {
-    /* Primary Colors - Vibrant Blue-Purple Gradient */
+    /* Primary Colors - Vibrant Blue-Purple Gradient (Knowledge Mode) */
     --color-primary-50: #f0f9ff;
     --color-primary-100: #e0f2fe;
     --color-primary-200: #bae6fd;
@@ -14,7 +14,7 @@
     --color-primary-800: #075985;
     --color-primary-900: #0c4a6e;
 
-    /* Secondary Colors - Warm Accent */
+    /* Secondary Colors - Warm Accent (Knowledge Mode) */
     --color-secondary-50: #fef7ee;
     --color-secondary-100: #fdedd3;
     --color-secondary-200: #fed7aa;
@@ -26,26 +26,54 @@
     --color-secondary-800: #9a3412;
     --color-secondary-900: #7c2d12;
 
+    /* Agent Mode Colors - Modern Teal-Blue Theme */
+    --color-agent-primary-50: #f0fdfa;
+    --color-agent-primary-100: #ccfbf1;
+    --color-agent-primary-200: #99f6e4;
+    --color-agent-primary-300: #5eead4;
+    --color-agent-primary-400: #2dd4bf;
+    --color-agent-primary-500: #14b8a6;
+    --color-agent-primary-600: #0d9488;
+    --color-agent-primary-700: #0f766e;
+    --color-agent-primary-800: #115e59;
+    --color-agent-primary-900: #134e4a;
+
+    --color-agent-secondary-50: #f8fafc;
+    --color-agent-secondary-100: #f1f5f9;
+    --color-agent-secondary-200: #e2e8f0;
+    --color-agent-secondary-300: #cbd5e1;
+    --color-agent-secondary-400: #94a3b8;
+    --color-agent-secondary-500: #64748b;
+    --color-agent-secondary-600: #475569;
+    --color-agent-secondary-700: #334155;
+    --color-agent-secondary-800: #1e293b;
+    --color-agent-secondary-900: #0f172a;
+
     /* Neutral Colors - Warmer Gray Palette */
-    --color-gray-50: #fefefe;
-    --color-gray-100: #f8fafc;
-    --color-gray-200: #f1f5f9;
-    --color-gray-300: #e2e8f0;
-    --color-gray-400: #cbd5e1;
-    --color-gray-500: #94a3b8;
-    --color-gray-600: #64748b;
-    --color-gray-700: #475569;
-    --color-gray-800: #334155;
-    --color-gray-900: #1e293b;
+    --color-gray-50: #f9fafb;
+    --color-gray-100: #f3f4f6;
+    --color-gray-200: #e5e7eb;
+    --color-gray-300: #d1d5db;
+    --color-gray-400: #9ca3af;
+    --color-gray-500: #6b7280;
+    --color-gray-600: #4b5563;
+    --color-gray-700: #374151;
+    --color-gray-800: #1f2937;
+    --color-gray-900: #111827;
 
     /* Semantic Colors */
-    --color-success-50: #f0fdf4;
-    --color-success-500: #22c55e;
-    --color-success-600: #16a34a;
+    --color-success-50: #ecfdf5;
+    --color-success-100: #d1fae5;
+    --color-success-500: #10b981;
+    --color-success-600: #059669;
+    
     --color-warning-50: #fffbeb;
+    --color-warning-100: #fef3c7;
     --color-warning-500: #f59e0b;
     --color-warning-600: #d97706;
+    
     --color-error-50: #fef2f2;
+    --color-error-100: #fee2e2;
     --color-error-500: #ef4444;
     --color-error-600: #dc2626;
 
@@ -60,6 +88,107 @@
     --color-border-light: #e2e8f0;
     --color-border-medium: #cbd5e1;
     --color-border-focus: #0ea5e9;
+}
+
+/* Agent Mode Theme Override */
+.agent-mode {
+    /* Primary Colors - Teal Theme */
+    --color-primary-50: var(--color-agent-primary-50);
+    --color-primary-100: var(--color-agent-primary-100);
+    --color-primary-200: var(--color-agent-primary-200);
+    --color-primary-300: var(--color-agent-primary-300);
+    --color-primary-400: var(--color-agent-primary-400);
+    --color-primary-500: var(--color-agent-primary-500);
+    --color-primary-600: var(--color-agent-primary-600);
+    --color-primary-700: var(--color-agent-primary-700);
+    --color-primary-800: var(--color-agent-primary-800);
+    --color-primary-900: var(--color-agent-primary-900);
+
+    /* Secondary Colors - Modern Gray */
+    --color-secondary-50: var(--color-agent-secondary-50);
+    --color-secondary-100: var(--color-agent-secondary-100);
+    --color-secondary-200: var(--color-agent-secondary-200);
+    --color-secondary-300: var(--color-agent-secondary-300);
+    --color-secondary-400: var(--color-agent-secondary-400);
+    --color-secondary-500: var(--color-agent-secondary-500);
+    --color-secondary-600: var(--color-agent-secondary-600);
+    --color-secondary-700: var(--color-agent-secondary-700);
+    --color-secondary-800: var(--color-agent-secondary-800);
+    --color-secondary-900: var(--color-agent-secondary-900);
+
+    /* Background Colors - Subtle Teal Tint */
+    --color-bg-primary: #ffffff;
+    --color-bg-secondary: #fafdfc;
+    --color-bg-tertiary: #f0fdfa;
+    --color-bg-elevated: #ffffff;
+
+    /* Border Colors */
+    --color-border-focus: var(--color-agent-primary-500);
+}
+
+/* Agent mode specific overrides for Tailwind classes */
+.agent-mode .bg-white {
+    background-color: var(--color-bg-primary) !important;
+}
+
+.agent-mode .border-gray-200 {
+    border-color: var(--color-border-light) !important;
+}
+
+.agent-mode .border-gray-100 {
+    border-color: var(--color-border-light) !important;
+}
+
+.agent-mode .text-gray-600 {
+    color: var(--color-gray-600) !important;
+}
+
+.agent-mode .text-gray-700 {
+    color: var(--color-gray-700) !important;
+}
+
+.agent-mode .text-gray-900 {
+    color: var(--color-gray-900) !important;
+}
+
+.agent-mode .hover\:bg-gray-100:hover {
+    background-color: var(--color-gray-100) !important;
+}
+
+.agent-mode .hover\:bg-gray-50:hover {
+    background-color: var(--color-gray-50) !important;
+}
+
+/* Agent mode specific component styles */
+.agent-mode header {
+    background-color: var(--color-bg-primary) !important;
+    border-bottom-color: var(--color-primary-200) !important;
+}
+
+.agent-mode .sidebar {
+    background-color: var(--color-bg-primary) !important;
+    border-right-color: var(--color-primary-200) !important;
+}
+
+.agent-mode .chat-container {
+    background-color: var(--color-bg-secondary) !important;
+}
+
+/* Subtle teal accents for interactive elements */
+.agent-mode .hover\:bg-gray-100:hover {
+    background-color: var(--color-primary-50) !important;
+}
+
+.agent-mode .hover\:bg-gray-50:hover {
+    background-color: var(--color-primary-50) !important;
+}
+
+.agent-mode .bg-primary-50 {
+    background-color: var(--color-primary-50) !important;
+}
+
+.agent-mode .text-primary-600 {
+    color: var(--color-primary-600) !important;
 }
 
 /* ===== TYPOGRAPHY SYSTEM ===== */
@@ -296,28 +425,7 @@
     box-shadow: var(--shadow-sm);
 }
 
-/* Enhanced Card Styles */
-.card {
-    background: var(--color-bg-elevated);
-    border: 1px solid var(--color-border-light);
-    border-radius: var(--radius-xl);
-    box-shadow: var(--shadow-sm);
-    transition: all var(--transition-normal);
-}
-
-.card:hover {
-    box-shadow: var(--shadow-md);
-    transform: translateY(-1px);
-}
-
-.card-elevated {
-    background: var(--color-bg-elevated);
-    border: 1px solid var(--color-border-light);
-    border-radius: var(--radius-xl);
-    box-shadow: var(--shadow-lg);
-}
-
-/* Enhanced Input Styles */
+/* Enhanced Input Styles with Better Contrast */
 .input {
     width: 100%;
     padding: var(--space-3) var(--space-4);
@@ -326,22 +434,28 @@
     line-height: var(--leading-normal);
     color: var(--color-gray-900);
     background: var(--color-bg-primary);
-    border: 2px solid var(--color-border-light);
+    border: 2px solid var(--color-gray-300);
     border-radius: var(--radius-lg);
     transition: all var(--transition-normal);
 }
 
 .input:focus {
     outline: none;
-    border-color: var(--color-border-focus);
-    box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1);
+    border-color: var(--color-primary-500);
+    box-shadow: 
+        0 0 0 3px rgba(14, 165, 233, 0.15),
+        0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .input::placeholder {
-    color: var(--color-gray-400);
+    color: var(--color-gray-500);
 }
 
-/* Enhanced Badge Styles */
+.input:hover {
+    border-color: var(--color-gray-400);
+}
+
+/* Enhanced Badge Styles with Better Contrast */
 .badge {
     display: inline-flex;
     align-items: center;
@@ -351,28 +465,33 @@
     font-weight: var(--font-weight-medium);
     line-height: var(--leading-normal);
     border-radius: var(--radius-full);
-    background: var(--color-gray-100);
-    color: var(--color-gray-700);
+    background: var(--color-gray-200);
+    color: var(--color-gray-800);
+    border: 1px solid var(--color-gray-300);
 }
 
 .badge-primary {
     background: var(--color-primary-100);
-    color: var(--color-primary-700);
+    color: var(--color-primary-800);
+    border-color: var(--color-primary-200);
 }
 
 .badge-success {
-    background: var(--color-success-50);
-    color: var(--color-success-600);
+    background: var(--color-success-100);
+    color: var(--color-success-700);
+    border-color: var(--color-success-200);
 }
 
 .badge-warning {
-    background: var(--color-warning-50);
-    color: var(--color-warning-600);
+    background: var(--color-warning-100);
+    color: var(--color-warning-700);
+    border-color: var(--color-warning-200);
 }
 
 .badge-error {
-    background: var(--color-error-50);
-    color: var(--color-error-600);
+    background: var(--color-error-100);
+    color: var(--color-error-700);
+    border-color: var(--color-error-200);
 }
 
 /* Enhanced Animation Classes */
@@ -419,21 +538,12 @@
     }
 }
 
-/* Enhanced Focus Styles */
-.focus-ring {
-    outline: 2px solid var(--color-border-focus);
-    outline-offset: 2px;
-}
-
-.focus-ring:focus {
-    outline: 2px solid var(--color-border-focus);
-    outline-offset: 2px;
-}
+/* Enhanced Focus States - REMOVED (replaced with better version below) */
 
 /* Enhanced Scrollbar */
 ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+    width: 10px;
+    height: 10px;
 }
 
 ::-webkit-scrollbar-track {
@@ -444,6 +554,7 @@
 ::-webkit-scrollbar-thumb {
     background: var(--color-gray-300);
     border-radius: var(--radius-full);
+    border: 2px solid var(--color-gray-100);
     transition: background var(--transition-normal);
 }
 
@@ -457,6 +568,11 @@
     color: var(--color-primary-900);
 }
 
+::-moz-selection {
+    background: var(--color-primary-200);
+    color: var(--color-primary-900);
+}
+
 /* Enhanced Loading States */
 .loading-dots {
     display: inline-flex;
@@ -464,8 +580,8 @@
 }
 
 .loading-dots > div {
-    width: 6px;
-    height: 6px;
+    width: 8px;
+    height: 8px;
     border-radius: var(--radius-full);
     background: currentColor;
     animation: loadingDots 1.4s ease-in-out infinite both;
@@ -479,9 +595,7 @@
 }
 
 @keyframes loadingDots {
-    0%,
-    80%,
-    100% {
+    0%, 80%, 100% {
         transform: scale(0.8);
         opacity: 0.5;
     }
@@ -489,4 +603,154 @@
         transform: scale(1);
         opacity: 1;
     }
+}
+
+/* Enhanced Loading Skeleton */
+.loading-skeleton {
+    background: linear-gradient(90deg, 
+        var(--color-gray-100) 25%, 
+        var(--color-gray-200) 50%, 
+        var(--color-gray-100) 75%);
+    background-size: 200% 100%;
+    animation: loadingSkeleton 1.5s infinite;
+}
+
+@keyframes loadingSkeleton {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* ===== ENHANCED TEXT CONTRAST ===== */
+
+/* Primary Text Colors with Better Contrast */
+.text-primary {
+    color: var(--color-gray-900) !important;
+}
+
+.text-secondary {
+    color: var(--color-gray-700) !important;
+}
+
+.text-tertiary {
+    color: var(--color-gray-600) !important;
+}
+
+.text-muted {
+    color: var(--color-gray-500) !important;
+}
+
+.text-disabled {
+    color: var(--color-gray-400) !important;
+}
+
+/* Enhanced Background Colors */
+.bg-subtle {
+    background-color: var(--color-gray-50) !important;
+}
+
+.bg-muted {
+    background-color: var(--color-gray-100) !important;
+}
+
+.bg-elevated {
+    background-color: var(--color-bg-elevated) !important;
+}
+
+/* Enhanced Border Colors */
+.border-subtle {
+    border-color: var(--color-gray-200) !important;
+}
+
+.border-muted {
+    border-color: var(--color-gray-300) !important;
+}
+
+/* Enhanced Hover States */
+.hover\:bg-subtle:hover {
+    background-color: var(--color-gray-50) !important;
+}
+
+.hover\:bg-muted:hover {
+    background-color: var(--color-gray-100) !important;
+}
+
+.hover\:text-primary:hover {
+    color: var(--color-gray-900) !important;
+}
+
+.hover\:text-secondary:hover {
+    color: var(--color-gray-700) !important;
+}
+
+/* Enhanced Focus States with Better Contrast */
+.focus-ring {
+    outline: 2px solid var(--color-primary-500);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.15);
+}
+
+.focus-ring:focus {
+    outline: 2px solid var(--color-primary-500);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.15);
+}
+
+/* Enhanced Button States with Better Contrast */
+.btn-primary:focus {
+    outline: 2px solid var(--color-primary-500);
+    outline-offset: 2px;
+    box-shadow: 
+        0 0 0 4px rgba(14, 165, 233, 0.15),
+        var(--shadow-lg);
+}
+
+.btn-primary:active {
+    transform: translateY(0);
+    box-shadow: var(--shadow-sm);
+}
+
+/* Enhanced Input Focus with Better Contrast */
+.input:focus {
+    outline: none;
+    border-color: var(--color-primary-500);
+    box-shadow: 
+        0 0 0 3px rgba(14, 165, 233, 0.15),
+        0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+/* Enhanced Message Item Styling with Better Contrast */
+.message-item {
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    transition: all var(--transition-normal);
+}
+
+.message-item:hover {
+    box-shadow: none;
+    transform: none;
+    border-color: transparent;
+}
+
+/* Enhanced Card Styles with Better Contrast */
+.card {
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-lg);
+    box-shadow: none;
+    transition: all var(--transition-normal);
+}
+
+.card:hover {
+    box-shadow: none;
+    transform: none;
+    border-color: transparent;
+}
+
+.card-elevated {
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-lg);
+    box-shadow: none;
 }

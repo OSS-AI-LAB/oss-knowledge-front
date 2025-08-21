@@ -2,8 +2,9 @@
     <!-- 사이드바 (접힌/펼쳐진 상태 통합) -->
     <div
         v-show="isOpen"
-        class="fixed md:relative inset-y-0 left-0 z-40 bg-white border-r border-gray-200 flex flex-col shadow-sm transform transition-all duration-300 ease-in-out"
+        class="fixed md:relative inset-y-0 left-0 z-40 flex flex-col shadow-sm transform transition-all duration-300 ease-in-out sidebar"
         :class="isCollapsed ? 'w-12' : 'w-80'"
+        style="background-color: var(--color-bg-primary); border-right: 1px solid var(--color-border-light)"
     >
         <!-- 접힌 상태일 때 아이콘들 -->
         <div v-if="isCollapsed" class="flex flex-col h-full">
@@ -34,7 +35,7 @@
                 <router-link
                     to="/"
                     class="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-all duration-200"
-                    :class="{ 'bg-blue-50 text-blue-600': $route.path === '/' }"
+                    :class="{ 'bg-primary-50 text-primary-600': $route.path === '/' }"
                     title="채팅"
                 >
                     <svg
@@ -94,11 +95,28 @@
                     </svg>
                 </button>
 
+                <!-- 모드 토글 (접힌 상태) -->
+                <div class="p-2">
+                    <div 
+                        @click="uiStore.toggleMode()"
+                        class="w-6 h-6 rounded-full cursor-pointer transition-all duration-200 flex items-center justify-center"
+                        :class="uiStore.isKnowledgeMode ? 'bg-gradient-to-r from-secondary-400 to-secondary-500' : 'bg-gradient-to-r from-primary-400 to-primary-500'"
+                        :title="uiStore.isAgentMode ? 'Knowledge 모드로 전환' : 'Agent 모드로 전환'"
+                    >
+                        <svg v-if="uiStore.isKnowledgeMode" class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                        </svg>
+                        <svg v-else class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        </svg>
+                    </div>
+                </div>
+
                 <!-- 데이터 업로드 버튼 -->
                 <router-link
                     to="/upload"
                     class="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-all duration-200"
-                    :class="{ 'bg-blue-50 text-blue-600': $route.path === '/upload' }"
+                    :class="{ 'bg-primary-50 text-primary-600': $route.path === '/upload' }"
                     title="데이터 업로드"
                 >
                     <svg
@@ -129,7 +147,7 @@
                             :class="[
                                 'relative p-1.5 rounded-lg cursor-pointer transition-all duration-200 group',
                                 conversationStore.currentConversationId === conv.id
-                                    ? 'bg-blue-50 text-blue-600'
+                                    ? 'bg-primary-50 text-primary-600'
                                     : 'hover:bg-gray-100 text-gray-600',
                             ]"
                             :title="conv.title"
@@ -268,28 +286,48 @@
                     </button>
                 </div>
 
+                <!-- 모드 토글 -->
+                <div class="mb-4 flex justify-center">
+                    <ModeToggle />
+                </div>
+
                 <!-- 네비게이션 버튼들 -->
-                <div class="flex gap-2">
+                <div class="flex gap-2 justify-center">
                     <router-link
                         to="/"
-                        class="flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200"
-                        :class="$route.path === '/' ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'"
+                        class="flex items-center gap-2 px-4 py-2.5 text-base font-medium rounded-lg transition-all duration-200 flex-1 justify-center max-w-32"
+                        :class="$route.path === '/' ? 'bg-primary-50 text-primary-600 border border-primary-200' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'"
                     >
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg v-if="uiStore.isKnowledgeMode" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
                         </svg>
-                        채팅
+                        <svg v-else class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        </svg>
+                        {{ uiStore.isKnowledgeMode ? '채팅' : 'Agent' }}
                     </router-link>
                     
                     <router-link
                         to="/upload"
-                        class="flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200"
-                        :class="$route.path === '/upload' ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'"
+                        class="flex items-center gap-2 px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 flex-1 justify-center"
+                        :class="$route.path === '/upload' ? 'bg-primary-50 text-primary-600 border border-primary-200' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'"
                     >
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
                         </svg>
-                        데이터 업로드
+                        업로드
+                    </router-link>
+                    
+                    <router-link
+                        to="/rag-management"
+                        class="flex items-center gap-2 px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 flex-1 justify-center"
+                        :class="$route.path === '/rag-management' ? 'bg-primary-50 text-primary-600 border border-primary-200' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'"
+                    >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        </svg>
+                        RAG 관리
                     </router-link>
                 </div>
             </div>
@@ -327,23 +365,23 @@
                         :key="conv.id"
                         @click="conversationStore.selectConversation(conv.id)"
                         :class="[
-                            'group flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all duration-200 hover:bg-gray-50',
+                            'group flex items-center gap-3 p-2.5 rounded-lg cursor-pointer transition-all duration-200',
                             conversationStore.currentConversationId === conv.id
-                                ? 'bg-blue-50 border border-blue-200'
-                                : '',
+                                ? 'bg-blue-50 text-blue-700' 
+                                : 'hover:bg-gray-50 text-gray-700',
                         ]"
                     >
                         <!-- 대화 아이콘 -->
                         <div
                             :class="[
-                                'flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center',
+                                'flex-shrink-0 w-6 h-6 rounded-md flex items-center justify-center',
                                 conversationStore.currentConversationId === conv.id
                                     ? 'bg-blue-100 text-blue-600'
-                                    : 'bg-gray-100 text-gray-600',
+                                    : 'bg-gray-100 text-gray-500',
                             ]"
                         >
                             <svg
-                                class="w-4 h-4"
+                                class="w-3 h-3"
                                 fill="none"
                                 stroke="currentColor"
                                 viewBox="0 0 24 24"
@@ -359,10 +397,10 @@
 
                         <!-- 대화 정보 -->
                         <div class="flex-1 min-w-0">
-                            <div class="text-sm font-medium text-gray-900 truncate">
+                            <div class="text-sm font-medium truncate">
                                 {{ conv.title }}
                             </div>
-                            <div class="text-xs text-gray-500 mt-1">
+                            <div class="text-xs text-gray-500 mt-0.5">
                                 {{ formatTime(conv.updatedAt) }}
                             </div>
                         </div>
@@ -375,7 +413,7 @@
                                 title="삭제"
                             >
                                 <svg
-                                    class="w-4 h-4"
+                                    class="w-3 h-3"
                                     fill="none"
                                     stroke="currentColor"
                                     viewBox="0 0 24 24"
@@ -455,6 +493,7 @@ import { ref, computed } from "vue";
 import { useConversationStore } from "@/stores/conversation";
 import { useUIStore } from "@/stores/ui";
 import { useChatStore } from "@/stores/chat";
+import ModeToggle from "@/components/common/ModeToggle.vue";
 
 const conversationStore = useConversationStore();
 const uiStore = useUIStore();

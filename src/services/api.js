@@ -230,6 +230,244 @@ export const uploadFileAPI = async (file) => {
     }
 };
 
+// ===== Azure File Share 연동 문서 관리 API =====
+
+/**
+ * 문서 목록 조회 API (일반 RAG)
+ * @returns {Promise<Array>} 문서 목록
+ */
+export const getDocumentsAPI = async () => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/documents`, {
+            headers: getHeaders(),
+        });
+
+        if (!response.ok) {
+            throw new Error(`API Error: ${response.status}`);
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error("Failed to fetch documents:", error);
+        throw error;
+    }
+};
+
+/**
+ * 부서별 문서 목록 조회 API
+ * @param {string} departmentId - 부서 ID
+ * @returns {Promise<Array>} 부서별 문서 목록
+ */
+export const getDepartmentDocumentsAPI = async (departmentId) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/departments/${departmentId}/documents`, {
+            headers: getHeaders(),
+        });
+
+        if (!response.ok) {
+            throw new Error(`API Error: ${response.status}`);
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error("Failed to fetch department documents:", error);
+        throw error;
+    }
+};
+
+/**
+ * 문서 업로드 API (일반 RAG)
+ * @param {Array<File>} files - 업로드할 파일들
+ * @returns {Promise<Object>} 업로드 결과
+ */
+export const uploadDocumentsAPI = async (files) => {
+    const formData = new FormData();
+    files.forEach((file, index) => {
+        formData.append(`files[${index}]`, file);
+    });
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/documents/upload`, {
+            method: "POST",
+            body: formData,
+        });
+
+        if (!response.ok) {
+            throw new Error(`Upload Error: ${response.status}`);
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error("Failed to upload documents:", error);
+        throw error;
+    }
+};
+
+/**
+ * 부서별 문서 업로드 API
+ * @param {Array<File>} files - 업로드할 파일들
+ * @param {string} departmentId - 부서 ID
+ * @returns {Promise<Object>} 업로드 결과
+ */
+export const uploadDepartmentDocumentsAPI = async (files, departmentId) => {
+    const formData = new FormData();
+    files.forEach((file, index) => {
+        formData.append(`files[${index}]`, file);
+    });
+    formData.append('departmentId', departmentId);
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/departments/${departmentId}/documents/upload`, {
+            method: "POST",
+            body: formData,
+        });
+
+        if (!response.ok) {
+            throw new Error(`Upload Error: ${response.status}`);
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error("Failed to upload department documents:", error);
+        throw error;
+    }
+};
+
+/**
+ * 문서 다운로드 API (일반 RAG)
+ * @param {string} documentId - 문서 ID
+ * @returns {Promise<Blob>} 문서 파일
+ */
+export const downloadDocumentAPI = async (documentId) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/documents/${documentId}/download`, {
+            headers: getHeaders(),
+        });
+
+        if (!response.ok) {
+            throw new Error(`Download Error: ${response.status}`);
+        }
+
+        return await response.blob();
+    } catch (error) {
+        console.error("Failed to download document:", error);
+        throw error;
+    }
+};
+
+/**
+ * 부서별 문서 다운로드 API
+ * @param {string} documentId - 문서 ID
+ * @param {string} departmentId - 부서 ID
+ * @returns {Promise<Blob>} 문서 파일
+ */
+export const downloadDepartmentDocumentAPI = async (documentId, departmentId) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/departments/${departmentId}/documents/${documentId}/download`, {
+            headers: getHeaders(),
+        });
+
+        if (!response.ok) {
+            throw new Error(`Download Error: ${response.status}`);
+        }
+
+        return await response.blob();
+    } catch (error) {
+        console.error("Failed to download department document:", error);
+        throw error;
+    }
+};
+
+/**
+ * 문서 삭제 API (일반 RAG)
+ * @param {string} documentId - 문서 ID
+ * @returns {Promise<Object>} 삭제 결과
+ */
+export const deleteDocumentAPI = async (documentId) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/documents/${documentId}`, {
+            method: "DELETE",
+            headers: getHeaders(),
+        });
+
+        if (!response.ok) {
+            throw new Error(`Delete Error: ${response.status}`);
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error("Failed to delete document:", error);
+        throw error;
+    }
+};
+
+/**
+ * 부서별 문서 삭제 API
+ * @param {string} documentId - 문서 ID
+ * @param {string} departmentId - 부서 ID
+ * @returns {Promise<Object>} 삭제 결과
+ */
+export const deleteDepartmentDocumentAPI = async (documentId, departmentId) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/departments/${departmentId}/documents/${documentId}`, {
+            method: "DELETE",
+            headers: getHeaders(),
+        });
+
+        if (!response.ok) {
+            throw new Error(`Delete Error: ${response.status}`);
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error("Failed to delete department document:", error);
+        throw error;
+    }
+};
+
+/**
+ * Azure File Share 연결 상태 확인 API
+ * @returns {Promise<Object>} 연결 상태
+ */
+export const checkAzureFileShareConnectionAPI = async () => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/azure/connection-status`, {
+            headers: getHeaders(),
+        });
+
+        if (!response.ok) {
+            throw new Error(`Connection check failed: ${response.status}`);
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error("Failed to check Azure File Share connection:", error);
+        throw error;
+    }
+};
+
+/**
+ * Azure File Share 동기화 API
+ * @returns {Promise<Object>} 동기화 결과
+ */
+export const syncAzureFileShareAPI = async () => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/azure/sync`, {
+            method: "POST",
+            headers: getHeaders(),
+        });
+
+        if (!response.ok) {
+            throw new Error(`Sync failed: ${response.status}`);
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error("Failed to sync Azure File Share:", error);
+        throw error;
+    }
+};
+
 /**
  * 헬스 체크 API
  * @returns {Promise<Object>} 시스템 상태

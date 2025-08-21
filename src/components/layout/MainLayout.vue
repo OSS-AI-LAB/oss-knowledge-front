@@ -1,5 +1,5 @@
 <template>
-  <div class="h-screen flex overflow-hidden">
+  <div class="h-screen flex overflow-hidden" :class="[backgroundClass, { 'agent-mode': uiStore.isAgentMode }]">
     <!-- 사이드바 -->
     <Sidebar />
 
@@ -16,24 +16,30 @@
       </main>
     </div>
 
-    <!-- 에러 메시지 -->
-    <ErrorMessage
-      :show="uiStore.error"
-      :message="uiStore.errorMessage"
-      @close="uiStore.clearError()"
+    <!-- 알림 메시지 -->
+    <NotificationMessage
+      :show="uiStore.notification"
+      :message="uiStore.notificationMessage"
+      :type="uiStore.notificationType"
+      @close="uiStore.clearNotification()"
     />
   </div>
 </template>
 
 <script setup>
-import { onMounted, onUnmounted } from 'vue'
+import { onMounted, onUnmounted, computed } from 'vue'
 import { useUIStore } from '@/stores/ui'
 import Sidebar from './Sidebar.vue'
 import Header from './Header.vue'
 import ChatContainer from '../chat/ChatContainer.vue'
-import ErrorMessage from '../common/ErrorMessage.vue'
+import NotificationMessage from '../common/NotificationMessage.vue'
 
 const uiStore = useUIStore()
+
+// 배경 클래스 계산
+const backgroundClass = computed(() => {
+  return uiStore.isAgentMode ? 'bg-slate-50' : 'bg-white'
+})
 
 // 화면 크기 변경 감지
 const handleResize = () => {
@@ -42,6 +48,7 @@ const handleResize = () => {
 
 onMounted(() => {
   uiStore.initSidebar()
+  uiStore.initMode()
   window.addEventListener('resize', handleResize)
 })
 

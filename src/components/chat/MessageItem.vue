@@ -1,15 +1,16 @@
 <template>
-    <div class="px-6 py-8 last:pb-6 group border-b border-gray-100 last:border-b-0">
+    <div class="px-6 py-6 last:pb-4 group" style="border-bottom: 1px solid var(--color-gray-100)">
         <div class="max-w-4xl mx-auto">
-            <div class="flex gap-4">
+            <div class="flex gap-3">
                 <!-- 아바타 -->
                 <div class="flex-shrink-0 mt-1">
                     <div
                         v-if="message.role === 'assistant'"
-                        class="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-sm"
+                        class="w-7 h-7 rounded-full flex items-center justify-center"
+                        style="background: linear-gradient(135deg, var(--color-primary-500), var(--color-primary-600))"
                     >
                         <svg
-                            class="w-4 h-4 text-white"
+                            class="w-3.5 h-3.5 text-white"
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
@@ -24,7 +25,7 @@
                     </div>
                     <div
                         v-else
-                        class="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center text-white font-medium text-sm shadow-sm"
+                        class="w-7 h-7 rounded-full bg-gray-700 flex items-center justify-center text-white font-medium text-xs"
                     >
                         NJ
                     </div>
@@ -33,8 +34,8 @@
                 <!-- 메시지 내용 -->
                 <div class="flex-1 min-w-0">
                     <!-- 역할 표시 -->
-                    <div class="mb-3">
-                        <span class="text-sm font-semibold text-gray-900">
+                    <div class="mb-2">
+                        <span class="text-sm font-medium text-gray-700">
                             {{ message.role === "assistant" ? "Claude" : "NJ" }}
                         </span>
                     </div>
@@ -42,19 +43,19 @@
                     <!-- 파일 첨부 표시 -->
                     <div
                         v-if="message.files && message.files.length > 0"
-                        class="mb-4"
+                        class="mb-3"
                     >
                         <div class="flex flex-wrap gap-2">
                             <div
                                 v-for="(file, index) in message.files"
                                 :key="index"
-                                class="inline-flex items-center gap-2 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm hover:bg-gray-100 transition-colors"
+                                class="inline-flex items-center gap-2 px-2 py-1.5 bg-gray-50 border border-gray-200 rounded-md text-sm hover:bg-gray-100 transition-colors"
                             >
-                                <span class="text-lg">{{
+                                <span class="text-base">{{
                                     getFileIcon(file.type)
                                 }}</span>
                                 <div class="flex flex-col">
-                                    <span class="font-medium text-gray-900">{{
+                                    <span class="font-medium text-gray-800">{{
                                         file.name
                                     }}</span>
                                     <span class="text-xs text-gray-500">{{
@@ -65,24 +66,42 @@
                         </div>
                     </div>
 
+                    <!-- 멘션된 부서 표시 -->
+                    <div
+                        v-if="message.mentionedDepartments && message.mentionedDepartments.length > 0"
+                        class="mb-3"
+                    >
+                        <div class="flex items-center gap-2 mb-1.5">
+                            <span class="text-xs font-medium text-gray-600">멘션된 부서:</span>
+                        </div>
+                        <div class="flex flex-wrap gap-1.5">
+                            <MentionTag
+                                v-for="dept in message.mentionedDepartments"
+                                :key="dept.id"
+                                :department="dept"
+                                :removable="false"
+                            />
+                        </div>
+                    </div>
+
                     <!-- 메시지 텍스트 -->
                     <div
-                        class="message-content prose prose-lg max-w-none text-gray-800 leading-relaxed"
+                        class="message-content prose prose-sm max-w-none text-gray-800 leading-relaxed"
                         v-html="parsedContent"
                     ></div>
 
                     <!-- 메시지 액션 버튼들 (Assistant 메시지에만 표시) -->
                     <div
                         v-if="message.role === 'assistant'"
-                        class="flex items-center gap-1 mt-4 pt-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                        class="flex items-center gap-1 mt-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
                     >
                         <button
                             @click="copyMessage"
-                            class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-all duration-200"
+                            class="inline-flex items-center gap-1 px-2 py-1 text-xs text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-all duration-200"
                             title="복사"
                         >
                             <svg
-                                class="w-4 h-4"
+                                class="w-3 h-3"
                                 fill="none"
                                 stroke="currentColor"
                                 viewBox="0 0 24 24"
@@ -99,11 +118,11 @@
 
                         <button
                             @click="regenerateResponse"
-                            class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-all duration-200"
+                            class="inline-flex items-center gap-1 px-2 py-1 text-xs text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-all duration-200"
                             title="다시 생성"
                         >
                             <svg
-                                class="w-4 h-4"
+                                class="w-3 h-3"
                                 fill="none"
                                 stroke="currentColor"
                                 viewBox="0 0 24 24"
@@ -120,11 +139,11 @@
 
                         <button
                             @click="likeMessage"
-                            class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-all duration-200"
+                            class="inline-flex items-center gap-1 px-2 py-1 text-xs text-gray-400 hover:text-green-600 hover:bg-green-50 rounded transition-all duration-200"
                             title="좋아요"
                         >
                             <svg
-                                class="w-4 h-4"
+                                class="w-3 h-3"
                                 fill="none"
                                 stroke="currentColor"
                                 viewBox="0 0 24 24"
@@ -141,11 +160,11 @@
 
                         <button
                             @click="dislikeMessage"
-                            class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-all duration-200"
+                            class="inline-flex items-center gap-1 px-2 py-1 text-xs text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-all duration-200"
                             title="싫어요"
                         >
                             <svg
-                                class="w-4 h-4"
+                                class="w-3 h-3"
                                 fill="none"
                                 stroke="currentColor"
                                 viewBox="0 0 24 24"
@@ -163,7 +182,7 @@
                     </div>
 
                     <!-- 시간 표시 -->
-                    <div class="text-xs text-gray-400 mt-3">
+                    <div class="text-xs text-gray-400 mt-2">
                         {{ formatTime(message.timestamp) }}
                     </div>
                 </div>
@@ -177,6 +196,7 @@ import { computed } from "vue";
 import { parseMarkdown } from "@/utils/markdown";
 import { formatFileSize, getFileIcon } from "@/utils/fileHandler";
 import { useUIStore } from "@/stores/ui";
+import MentionTag from "./MentionTag.vue";
 
 const props = defineProps({
     message: {
@@ -247,15 +267,15 @@ const dislikeMessage = () => {
 <style scoped>
 /* 메시지 내용 스타일링 */
 .message-content :deep(p) {
-    @apply mb-4 last:mb-0 leading-relaxed;
+    @apply mb-3 last:mb-0 leading-relaxed;
 }
 
 .message-content :deep(pre) {
-    @apply bg-gray-50 rounded-xl p-4 mb-4 overflow-x-auto border border-gray-200;
+    @apply bg-gray-50 rounded-lg p-3 mb-3 overflow-x-auto border border-gray-200;
 }
 
 .message-content :deep(code) {
-    @apply bg-gray-100 px-2 py-1 rounded-md text-sm font-mono;
+    @apply bg-gray-100 px-1.5 py-0.5 rounded text-sm font-mono;
 }
 
 .message-content :deep(pre code) {
@@ -263,38 +283,38 @@ const dislikeMessage = () => {
 }
 
 .message-content :deep(ul) {
-    @apply list-disc pl-6 mb-4 space-y-1;
+    @apply list-disc pl-5 mb-3 space-y-1;
 }
 
 .message-content :deep(ol) {
-    @apply list-decimal pl-6 mb-4 space-y-1;
+    @apply list-decimal pl-5 mb-3 space-y-1;
 }
 
 .message-content :deep(blockquote) {
-    @apply border-l-4 border-blue-300 pl-4 italic my-4 bg-blue-50 py-2 rounded-r-lg;
+    @apply border-l-4 border-blue-300 pl-3 italic my-3 bg-blue-50 py-2 rounded-r-md;
 }
 
 .message-content :deep(h1) {
-    @apply text-2xl font-bold mb-4 mt-6 first:mt-0;
-}
-
-.message-content :deep(h2) {
     @apply text-xl font-bold mb-3 mt-5 first:mt-0;
 }
 
-.message-content :deep(h3) {
+.message-content :deep(h2) {
     @apply text-lg font-bold mb-2 mt-4 first:mt-0;
 }
 
+.message-content :deep(h3) {
+    @apply text-base font-bold mb-2 mt-3 first:mt-0;
+}
+
 .message-content :deep(table) {
-    @apply w-full border-collapse border border-gray-300 mb-4 rounded-lg overflow-hidden;
+    @apply w-full border-collapse border border-gray-300 mb-3 rounded-lg overflow-hidden;
 }
 
 .message-content :deep(th) {
-    @apply border border-gray-300 px-4 py-2 bg-gray-50 font-semibold;
+    @apply border border-gray-300 px-3 py-2 bg-gray-50 font-semibold;
 }
 
 .message-content :deep(td) {
-    @apply border border-gray-300 px-4 py-2;
+    @apply border border-gray-300 px-3 py-2;
 }
 </style>
